@@ -1,0 +1,29 @@
+## template: jinja
+#cloud-config
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 evroc
+hostname: ${hostname}
+
+ssh_pwauth: false
+users:
+  - name: ubuntu
+    lock_passwd: true
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+{% if public_ssh_keys %}
+    ssh_authorized_keys:
+{% for pubkey in public_ssh_keys %}
+      - {{ pubkey }}
+{% endfor %}
+{% endif %}
+
+package_update: true
+
+packages:
+  - curl
+
+runcmd:
+  - curl -sfL https://get.k3s.io | K3S_TOKEN="${k3s_token}" sh -s - server --tls-san "${public_ip}" --write-kubeconfig-mode "0644"
+  - until kubectl get nodes; do echo "Waiting for k3s..."; sleep 5; done
+
+final_message: "k3s control plane ready after $UPTIME seconds"
