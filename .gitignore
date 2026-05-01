@@ -1,0 +1,53 @@
+# Binaries
+terraform-provider-evroc
+*.exe
+*.dll
+*.so
+*.dylib
+dist/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.out
+
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+crash.log
+
+# Go vendor
+vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.envrc
+
+# Build artifacts
+bin/
+
+# Test files
+test-deploy.sh
+test-output.log
+
+# GoReleaser generated files
+LICENSE.md
+completions/
+manpages/

@@ -1,0 +1,29 @@
+## template: jinja
+#cloud-config
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 evroc
+hostname: ${hostname}
+
+ssh_pwauth: false
+users:
+  - name: ubuntu
+    lock_passwd: true
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+{% if public_ssh_keys %}
+    ssh_authorized_keys:
+{% for pubkey in public_ssh_keys %}
+      - {{ pubkey }}
+{% endfor %}
+{% endif %}
+
+package_update: true
+
+packages:
+  - curl
+
+runcmd:
+  - sleep 30
+  - curl -sfL https://get.k3s.io | K3S_TOKEN="${k3s_token}" K3S_URL="${k3s_server_url}" sh -s - agent
+
+final_message: "k3s worker ready after $UPTIME seconds"

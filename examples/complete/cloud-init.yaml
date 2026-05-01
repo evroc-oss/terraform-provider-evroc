@@ -1,0 +1,40 @@
+## template: jinja
+#cloud-config
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 evroc
+hostname: ${hostname}
+fqdn: ${hostname}.evroc.local
+
+ssh_pwauth: false
+users:
+  - name: ubuntu
+    lock_passwd: true
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+{% if public_ssh_keys %}
+    ssh_authorized_keys:
+{% for pubkey in public_ssh_keys %}
+      - {{ pubkey }}
+{% endfor %}
+{% endif %}
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - nginx
+  - curl
+  - git
+
+runcmd:
+  - systemctl enable nginx
+  - systemctl start nginx
+  - echo "Hello from ${hostname}!" > /var/www/html/index.html
+
+write_files:
+  - path: /etc/motd
+    content: |
+      Welcome to ${hostname}
+      Managed by Terraform
+    owner: root:root
+    permissions: '0644'

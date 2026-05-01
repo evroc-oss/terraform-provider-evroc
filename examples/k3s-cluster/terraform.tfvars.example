@@ -1,0 +1,16 @@
+# Example Terraform variables for k3s cluster
+# Copy this file to terraform.tfvars and update with your values
+
+# SSH public key for accessing the VMs
+# Generate with: ssh-keygen -t rsa -b 4096 -C "your-email@example.com"
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... your-email@example.com"
+
+# Shared secret for k3s cluster authentication
+# Generate with: openssl rand -base64 32
+# This token must be at least 16 characters long
+k3s_token = "your-super-secret-k3s-token-change-this"
+
+# k3s version to install (optional)
+# Leave empty or comment out to use latest stable version
+# Find versions at: https://github.com/k3s-io/k3s/releases
+# k3s_version = "v1.28.5+k3s1"

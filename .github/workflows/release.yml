@@ -1,0 +1,176 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 evroc
+
+# Terraform Provider release workflow.
+name: Release
+
+# This GitHub action creates a release when a tag that matches the pattern
+# "v*" (e.g. v0.1.0) is created.
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.1.0, etc.
+
+# Releases need permissions to read and write the repository contents.
+# GitHub considers creating releases and uploading assets as writing contents.
+# id-token: write is required for keyless signing with Cosign
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/evroc-oss
+      GOSUMDB: off
+    steps:
+      # GitHub official action: Clones the repository code
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Allow goreleaser to access older tag information.
+          fetch-depth: 0
+
+      - name: Configure Git for private modules
+        run: |
+          git config --global url."https://${{ secrets.GO_MODULES_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      # GitHub official action: Installs Go programming language
+      - name: Set up Go
+        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      # Download dependencies
+      - name: Download dependencies
+        run: go mod download
+
+      # Force clean git state before GoReleaser
+      - name: Ensure clean git state
+        run: |
+          git status
+          git diff --stat
+          git reset --hard HEAD
+          git clean -fdx -e dist
+          git status
+
+      # Run GoReleaser to build and create draft release
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
+        with:
+          distribution: goreleaser
+          version: v2.5.1
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Install Cosign for keyless signing
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+
+      # Sign release artifacts with Cosign (keyless)
+      - name: Sign release artifacts
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+
+          # Sign each checksum file
+          for file in dist/*_SHA256SUMS; do
+            if [ -f "$file" ]; then
+              echo "Signing $file"
+              cosign sign-blob --yes "$file" \
+                --output-signature "${file}.sig" \
+                --output-certificate "${file}.pem"
+            fi
+          done
+
+      # Generate SBOM
+      - name: Generate SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          path: .
+          format: spdx-json
+          output-file: dist/sbom.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      # Sign the SBOM with Cosign (keyless)
+      - name: Sign SBOM
+        run: |
+          cosign sign-blob --yes dist/sbom.spdx.json \
+            --output-signature dist/sbom.spdx.json.sig \
+            --output-certificate dist/sbom.spdx.json.pem
+
+      # Generate SLSA provenance attestation
+      - name: Generate SLSA provenance
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+
+          # Create provenance predicate
+          cat > dist/provenance.json <<EOF
+          {
+            "buildType": "https://github.com/${{ github.repository }}/blob/main/.github/workflows/release.yml@refs/tags/${VERSION}",
+            "builder": {
+              "id": "https://github.com/actions/runner"
+            },
+            "invocation": {
+              "configSource": {
+                "uri": "git+https://github.com/${{ github.repository }}",
+                "digest": {
+                  "sha1": "${{ github.sha }}"
+                },
+                "entryPoint": ".github/workflows/release.yml"
+              }
+            },
+            "metadata": {
+              "buildStartedOn": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+              "buildFinishedOn": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+              "completeness": {
+                "parameters": true,
+                "environment": false,
+                "materials": false
+              },
+              "reproducible": false
+            },
+            "materials": [
+              {
+                "uri": "git+https://github.com/${{ github.repository }}",
+                "digest": {
+                  "sha1": "${{ github.sha }}"
+                }
+              }
+            ]
+          }
+          EOF
+
+          # Sign the provenance
+          cosign sign-blob --yes dist/provenance.json \
+            --output-signature dist/provenance.json.sig \
+            --output-certificate dist/provenance.json.pem
+
+      # Upload additional attestations to the draft release
+      - name: Upload attestations to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+
+          # Upload SBOM and signatures to draft release
+          gh release upload "$VERSION" \
+            dist/sbom.spdx.json \
+            dist/sbom.spdx.json.sig \
+            dist/sbom.spdx.json.pem \
+            dist/provenance.json \
+            dist/provenance.json.sig \
+            dist/provenance.json.pem \
+            dist/*_SHA256SUMS.sig \
+            dist/*_SHA256SUMS.pem
+
+      # Publish the draft release
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          gh release edit "$VERSION" --draft=false
