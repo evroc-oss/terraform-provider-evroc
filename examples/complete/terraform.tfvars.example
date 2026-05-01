@@ -1,0 +1,13 @@
+project = "your-project-id"
+region  = "se-sto"
+prefix  = "myapp"
+
+vm_flavor = "a1a.s"
+
+ssh_keys = [
+  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... user@example.com"
+]
+
+# Optional: Look up existing resources
+lookup_existing_disk = false
+existing_disk_name   = "my-existing-disk"

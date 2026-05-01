@@ -1,0 +1,91 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 evroc
+
+# golangci-lint configuration for terraform-provider-evroc
+# Aligned with cluster-api-provider-evroc standards
+# Focus: correctness and security over strict style enforcement
+
+version: "2"
+
+run:
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+  timeout: 5m
+  tests: true
+
+formatters:
+  enable:
+    - gofmt
+
+linters:
+  enable:
+    # Critical: Error checking (aligned with cluster-api)
+    - errcheck          # Check for unchecked errors
+    - errorlint         # Correct use of error wrapping
+
+    # Critical: Bug detection (aligned with cluster-api)
+    - staticcheck       # Advanced static analysis
+    - govet             # Standard Go vet checks
+    - ineffassign       # Detect ineffectual assignments
+    - unused            # Detect unused code
+
+    # Context handling (aligned with cluster-api)
+    - noctx             # Require context in http.Request
+    - contextcheck      # Check context.Context usage
+
+    # Code quality (aligned with cluster-api)
+    - misspell          # Fix common spelling mistakes
+
+    # Terraform provider specific
+    - goconst           # Detect repeated string constants
+    - gocyclo           # Cyclomatic complexity
+
+  settings:
+    errcheck:
+      check-type-assertions: false  # Terraform SDK guarantees meta type; type assertions are safe
+      check-blank: true
+      exclude-functions:
+        - (io.Closer).Close
+
+    staticcheck:
+      checks: ["all", "-ST1000", "-SA1019"]
+
+    govet:
+      enable-all: true
+      disable:
+        - shadow          # Shadow variables sometimes OK
+        - fieldalignment  # Struct field alignment - too pedantic
+
+    gocyclo:
+      min-complexity: 30  # Terraform Read functions can be complex
+
+  exclusions:
+    rules:
+      # Terraform convention: d.Set() errors are conventionally ignored
+      - linters:
+          - errcheck
+        text: "Error return value of `d.Set` is not checked"
+
+      # Allow test helpers to ignore errors and context (aligned with cluster-api)
+      - linters:
+          - errcheck
+          - noctx
+        path: ".*_test\\.go"
+
+      # Repeated string constants in tests are fine (test fixtures)
+      - linters:
+          - goconst
+        path: ".*_test\\.go"
+
+      # Terraform acceptance tests use underscore naming convention (e.g., Config_basic)
+      - linters:
+          - staticcheck
+        path: ".*_test\\.go"
+        text: "ST1003"
+
+      # Terraform Plugin SDK CRUD functions don't pass context; resolveClient uses
+      # context.Background() to create per-project SDK clients whose lifetime
+      # outlives individual requests. This is intentional and safe.
+      - linters:
+          - contextcheck
+        text: "Function `resolveClient"
