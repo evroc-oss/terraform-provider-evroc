@@ -13,7 +13,6 @@ on:
 
 # Releases need permissions to read and write the repository contents.
 # GitHub considers creating releases and uploading assets as writing contents.
-# id-token: write is required for keyless signing with Cosign
 permissions:
   contents: write
   id-token: write
@@ -47,6 +46,13 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
+        id: import_gpg
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+
       # Force clean git state before GoReleaser
       - name: Ensure clean git state
         run: |
@@ -56,7 +62,6 @@ jobs:
           git clean -fdx -e dist
           git status
 
-      # Run GoReleaser to build and create draft release
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         with:
@@ -65,22 +70,23 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
 
       # Install Cosign for keyless signing
       - name: Install Cosign
         uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
 
-      # Sign release artifacts with Cosign (keyless)
-      - name: Sign release artifacts
+      # Sign release artifacts with Cosign (keyless, in addition to GPG)
+      - name: Sign release artifacts with Cosign
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
 
-          # Sign each checksum file
+          # Sign each checksum file (use .cosign.sig to avoid collision with GPG .sig)
           for file in dist/*_SHA256SUMS; do
             if [ -f "$file" ]; then
-              echo "Signing $file"
+              echo "Signing $file with Cosign"
               cosign sign-blob --yes "$file" \
-                --output-signature "${file}.sig" \
+                --output-signature "${file}.cosign.sig" \
                 --output-certificate "${file}.pem"
             fi
           done
@@ -164,7 +170,7 @@ jobs:
             dist/provenance.json \
             dist/provenance.json.sig \
             dist/provenance.json.pem \
-            dist/*_SHA256SUMS.sig \
+            dist/*_SHA256SUMS.cosign.sig \
             dist/*_SHA256SUMS.pem
 
       # Publish the draft release
