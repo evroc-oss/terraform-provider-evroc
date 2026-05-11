@@ -47,8 +47,8 @@ Download pre-built binaries from [GitHub Releases](https://github.com/evroc-oss/
 <summary><strong>Linux / macOS</strong></summary>
 
 ```bash
-# Set your version and platform
-VERSION="0.1.10"
+# Fetch latest version automatically
+VERSION=$(curl -s https://api.github.com/repos/evroc-oss/terraform-provider-evroc/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/^v//')
 OS="linux"        # or: darwin
 ARCH="amd64"      # or: arm64
 
@@ -66,12 +66,13 @@ mv terraform-provider-evroc_v${VERSION} ~/.terraform.d/plugins/github.com/evroc-
 <details>
 <summary><strong>Windows</strong></summary>
 
-1. Download the `terraform-provider-evroc_0.1.10_windows_amd64.zip` file from [GitHub Releases](https://github.com/evroc-oss/terraform-provider-evroc/releases).
+1. Download the latest `terraform-provider-evroc_<VERSION>_windows_amd64.zip` file from [GitHub Releases](https://github.com/evroc-oss/terraform-provider-evroc/releases).
 2. Extract the `.zip` file.
 3. Create the plugin directory and move the binary:
 
 ```powershell
-$VERSION = "0.1.10"
+# Fetch latest version automatically
+$VERSION = (Invoke-RestMethod -Uri "https://api.github.com/repos/evroc-oss/terraform-provider-evroc/releases/latest").tag_name -replace '^v',''
 New-Item -ItemType Directory -Force -Path "$env:APPDATA\terraform.d\plugins\github.com\evroc-oss\evroc\$VERSION\windows_amd64"
 Move-Item terraform-provider-evroc_v$VERSION.exe "$env:APPDATA\terraform.d\plugins\github.com\evroc-oss\evroc\$VERSION\windows_amd64\"
 ```
@@ -115,20 +116,20 @@ cd terraform-provider-evroc
 make install
 ```
 
-This builds the provider and installs it to `~/.terraform.d/plugins/github.com/evroc-oss/evroc/0.1.10/linux_amd64/` (or `%APPDATA%\terraform.d\plugins\` on Windows).
+This builds the provider and installs it to `~/.terraform.d/plugins/github.com/evroc-oss/evroc/<VERSION>/linux_amd64/` (or `%APPDATA%\terraform.d\plugins\` on Windows), where `<VERSION>` is the Makefile's `VERSION` variable.
 
 **Configure Terraform to use the local build** — create (or update) `~/.terraformrc` (Linux/macOS) or `%APPDATA%\terraform.rc` (Windows) with a `dev_overrides` block:
 
 ```hcl
 provider_installation {
   dev_overrides {
-    "github.com/evroc-oss/evroc" = "/home/<your-user>/.terraform.d/plugins/github.com/evroc-oss/evroc/0.1.10/linux_amd64"
+    "github.com/evroc-oss/evroc" = "/home/<your-user>/.terraform.d/plugins/github.com/evroc-oss/evroc/<VERSION>/linux_amd64"
   }
   direct {}
 }
 ```
 
-> **The version in the path must match the version used by `make install`.** The default is `0.1.10`. If you override it (e.g. `make install VERSION=1.0.0`), update the path in `~/.terraformrc` to match.
+> **The version in the path must match the version used by `make install`.** Check the `VERSION` variable in the Makefile for the current default. If you override it (e.g. `make install VERSION=1.0.0`), update the path in `~/.terraformrc` to match.
 
 Adjust the path for your OS/architecture (e.g., `darwin_arm64` for Apple Silicon). On Windows, use forward slashes: `C:/Users/<your-user>/AppData/Roaming/terraform.d/plugins/...`.
 
@@ -608,8 +609,8 @@ All evroc Terraform Provider releases are cryptographically signed and attested 
 
 Every release includes:
 
-- **GPG Signatures** - Required by Terraform Registry, verifies checksum files
-- **Cosign Signatures** - Keyless signing using GitHub OIDC (no keys to manage)
+- **GPG Signatures** - Required by Terraform Registry, signs the SHA256SUMS file (`*.sig`)
+- **Cosign Signatures** - Keyless signing using GitHub OIDC (`*.cosign.sig`)
 - **SBOM** - Software Bill of Materials for dependency transparency
 - **SLSA Provenance** - Build integrity attestations proving official build process
 
@@ -618,18 +619,19 @@ Every release includes:
 **Quick verification with Cosign (recommended):**
 
 ```bash
-VERSION="v0.4.0"
+# Fetch latest version automatically
+VERSION="v$(curl -s https://api.github.com/repos/evroc-oss/terraform-provider-evroc/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/^v//')"
 BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
 # Download checksums and signature
 curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS"
-curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.sig"
+curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.cosign.sig"
 curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.pem"
 
 # Verify (requires cosign: brew install cosign)
 cosign verify-blob \
   terraform-provider-evroc_${VERSION#v}_SHA256SUMS \
-  --signature terraform-provider-evroc_${VERSION#v}_SHA256SUMS.sig \
+  --signature terraform-provider-evroc_${VERSION#v}_SHA256SUMS.cosign.sig \
   --certificate terraform-provider-evroc_${VERSION#v}_SHA256SUMS.pem \
   --certificate-identity-regexp="^https://github.com/evroc-oss/terraform-provider-evroc/" \
   --certificate-oidc-issuer="https://token.actions.githubusercontent.com"

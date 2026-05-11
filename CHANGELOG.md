@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-06
+
+### Added
+- GPG signing of release artifacts (required for Terraform Registry publishing)
+
+### Fixed
+- Go version badge not rendering (changed `go 1.25.0` to `go 1.25` in go.mod)
+- Cosign signature filename collision with GPG signature (renamed to `*.cosign.sig`)
+- Outdated version references in README (replaced hardcoded `0.1.10` with current version)
+
 ## [0.4.0] - 2026-05-01
 
 Initial public release of the evroc Terraform Provider.

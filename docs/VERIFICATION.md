@@ -6,11 +6,10 @@ This guide explains how to verify the authenticity and integrity of evroc Terraf
 
 All evroc Terraform Provider releases are cryptographically signed and attested:
 
-1. **Cosign Keyless Signing** - Signs checksums using GitHub OIDC (no keys to manage) ✅
-2. **SBOM** - Software Bill of Materials for transparency ✅
-3. **SLSA Provenance** - Build integrity attestation ✅
-
-**Note:** GPG signing will be added when the provider is published to the Terraform Registry. Currently, Cosign provides equivalent security guarantees.
+1. **GPG Signing** - Signs the SHA256SUMS file (required by Terraform Registry) ✅
+2. **Cosign Keyless Signing** - Signs checksums using GitHub OIDC (no keys to manage) ✅
+3. **SBOM** - Software Bill of Materials for transparency ✅
+4. **SLSA Provenance** - Build integrity attestation ✅
 
 ## Prerequisites
 
@@ -40,11 +39,11 @@ Cosign uses **keyless signing** via GitHub OIDC (no keys to manage).
 **Download checksums and Cosign signature:**
 
 ```bash
-VERSION="v0.4.0"  # Replace with desired version
+VERSION="v0.4.1"  # Replace with desired version
 BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
 curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS"
-curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.sig"
+curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.cosign.sig"
 curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.pem"
 ```
 
@@ -53,7 +52,7 @@ curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.pem"
 ```bash
 cosign verify-blob \
   terraform-provider-evroc_${VERSION#v}_SHA256SUMS \
-  --signature terraform-provider-evroc_${VERSION#v}_SHA256SUMS.sig \
+  --signature terraform-provider-evroc_${VERSION#v}_SHA256SUMS.cosign.sig \
   --certificate terraform-provider-evroc_${VERSION#v}_SHA256SUMS.pem \
   --certificate-identity-regexp="^https://github.com/evroc-oss/terraform-provider-evroc/" \
   --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
@@ -78,7 +77,7 @@ The SBOM provides transparency about all dependencies and components.
 **Download SBOM:**
 
 ```bash
-VERSION="v0.4.0"
+VERSION="v0.4.1"
 BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
 curl -LO "${BASE_URL}/sbom.spdx.json"
@@ -124,7 +123,7 @@ SLSA provenance proves the artifact was built by the expected workflow in a trus
 **Download provenance:**
 
 ```bash
-VERSION="v0.4.0"
+VERSION="v0.4.1"
 BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
 curl -LO "${BASE_URL}/provenance.json"
@@ -165,7 +164,7 @@ Here's a complete script to verify a release:
 #!/bin/bash
 set -e
 
-VERSION="v0.4.0"
+VERSION="v0.4.1"
 PLATFORM="linux_amd64"
 BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
@@ -175,14 +174,14 @@ echo "🔐 Verifying evroc Terraform Provider ${VERSION} for ${PLATFORM}"
 echo "📥 Downloading artifacts..."
 curl -sLO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_${PLATFORM}.zip"
 curl -sLO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS"
-curl -sLO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.sig"
+curl -sLO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.cosign.sig"
 curl -sLO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.pem"
 
 # Verify Cosign signature
 echo "✍️  Verifying Cosign signature..."
 cosign verify-blob \
   terraform-provider-evroc_${VERSION#v}_SHA256SUMS \
-  --signature terraform-provider-evroc_${VERSION#v}_SHA256SUMS.sig \
+  --signature terraform-provider-evroc_${VERSION#v}_SHA256SUMS.cosign.sig \
   --certificate terraform-provider-evroc_${VERSION#v}_SHA256SUMS.pem \
   --certificate-identity-regexp="^https://github.com/evroc-oss/terraform-provider-evroc/" \
   --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
@@ -204,7 +203,7 @@ You can automate verification in your CI/CD pipelines:
 # GitHub Actions example
 - name: Verify Terraform Provider
   run: |
-    VERSION="v0.4.0"
+    VERSION="v0.4.1"
     BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
     # Install cosign
@@ -213,12 +212,12 @@ You can automate verification in your CI/CD pipelines:
 
     # Download and verify
     curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS"
-    curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.sig"
+    curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.cosign.sig"
     curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS.pem"
 
     ./cosign-linux-amd64 verify-blob \
       terraform-provider-evroc_${VERSION#v}_SHA256SUMS \
-      --signature terraform-provider-evroc_${VERSION#v}_SHA256SUMS.sig \
+      --signature terraform-provider-evroc_${VERSION#v}_SHA256SUMS.cosign.sig \
       --certificate terraform-provider-evroc_${VERSION#v}_SHA256SUMS.pem \
       --certificate-identity-regexp="^https://github.com/evroc-oss/terraform-provider-evroc/" \
       --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
