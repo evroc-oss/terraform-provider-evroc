@@ -6,13 +6,15 @@
 
 Official Terraform provider for the evroc Cloud Platform
 
-Manage your evroc infrastructure as code with Terraform or [OpenTofu](https://opentofu.org/)
+Manage your evroc infrastructure as code with [Terraform](https://www.terraform.io/) or [OpenTofu](https://opentofu.org/)
 
 [![Tests](https://github.com/evroc-oss/terraform-provider-evroc/actions/workflows/ci.yml/badge.svg)](https://github.com/evroc-oss/terraform-provider-evroc/actions/workflows/ci.yml)
 [![Release](https://github.com/evroc-oss/terraform-provider-evroc/actions/workflows/release.yml/badge.svg)](https://github.com/evroc-oss/terraform-provider-evroc/actions/workflows/release.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/evroc-oss/terraform-provider-evroc)](https://goreportcard.com/report/github.com/evroc-oss/terraform-provider-evroc)
-[![Go Version](https://img.shields.io/github/go-mod-go-version/evroc-oss/terraform-provider-evroc)](https://github.com/evroc-oss/terraform-provider-evroc/blob/main/go.mod)
+[![Go Version](https://img.shields.io/badge/go-1.25-blue)](https://github.com/evroc-oss/terraform-provider-evroc/blob/main/go.mod)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Terraform Registry](https://img.shields.io/badge/Terraform-Registry-purple.svg)](https://registry.terraform.io/providers/evroc-oss/evroc/latest)
+[![OpenTofu Registry](https://img.shields.io/badge/OpenTofu-Registry-purple.svg)](https://github.com/opentofu/registry/blob/main/providers/e/evroc-oss/evroc.json)
 [![Security](https://img.shields.io/badge/Security-Signed%20%26%20Attested-green.svg)](docs/VERIFICATION.md)
 [![SLSA](https://img.shields.io/badge/SLSA-Provenance-blue.svg)](https://slsa.dev/)
 
@@ -21,6 +23,8 @@ Manage your evroc infrastructure as code with Terraform or [OpenTofu](https://op
 ---
 
 Declaratively manage your evroc cloud infrastructure — provision VMs, configure networks, manage storage, and control access. Version control your infrastructure, preview changes before applying, and collaborate with your team.
+
+> **OpenTofu compatible:** This provider works with both Terraform and [OpenTofu](https://opentofu.org/). All examples below use `terraform` commands, but `tofu` works identically.
 
 ## Capabilities
 
@@ -39,9 +43,63 @@ Declaratively manage your evroc cloud infrastructure — provision VMs, configur
 
 ## Installation
 
-### Option 1: Download from GitHub Releases (Recommended)
+### Option 1: From Registry (Recommended)
 
-Download pre-built binaries from [GitHub Releases](https://github.com/evroc-oss/terraform-provider-evroc/releases).
+The provider is published on both the [OpenTofu Registry](https://search.opentofu.org/provider/evroc-oss/evroc/latest) and the [Terraform Registry](https://registry.terraform.io/providers/evroc-oss/evroc/latest). No manual download needed — just declare it in your configuration.
+
+**Configure your project** — create a `main.tf` file:
+
+```hcl
+terraform {
+  required_providers {
+    evroc = {
+      source  = "evroc-oss/evroc"
+      version = "~> 0.4"
+    }
+  }
+}
+
+provider "evroc" {}
+```
+
+Then initialize the provider:
+
+```bash
+terraform init
+```
+
+This downloads and installs the provider from the registry. No infrastructure is created yet — you'll define resources in the next sections, then iterate with `terraform plan` and `terraform apply` to preview and apply changes.
+
+#### Upgrading the Provider
+
+To upgrade to a newer version of the provider, update the `version` constraint in your `main.tf`:
+
+```hcl
+terraform {
+  required_providers {
+    evroc = {
+      source  = "evroc-oss/evroc"
+      version = "~> 0.4"  # Update to desired version
+    }
+  }
+}
+```
+
+Then run:
+
+```bash
+terraform init -upgrade
+```
+
+This fetches the new version and updates the lock file (`.terraform.lock.hcl`). Review the [CHANGELOG](CHANGELOG.md) before upgrading for any breaking changes.
+
+> **Tip:** Use `terraform providers lock` to pre-generate lock file entries for multiple platforms (useful for CI/CD and team collaboration).
+
+---
+
+### Option 2: Download from GitHub Releases
+
+For air-gapped environments or when you need a specific binary.
 
 <details>
 <summary><strong>Linux / macOS</strong></summary>
@@ -57,8 +115,8 @@ curl -LO "https://github.com/evroc-oss/terraform-provider-evroc/releases/downloa
 unzip terraform-provider-evroc_${VERSION}_${OS}_${ARCH}.zip
 
 # Install to the local plugin directory
-mkdir -p ~/.terraform.d/plugins/github.com/evroc-oss/evroc/${VERSION}/${OS}_${ARCH}/
-mv terraform-provider-evroc_v${VERSION} ~/.terraform.d/plugins/github.com/evroc-oss/evroc/${VERSION}/${OS}_${ARCH}/
+mkdir -p ~/.terraform.d/plugins/evroc-oss/evroc/${VERSION}/${OS}_${ARCH}/
+mv terraform-provider-evroc_v${VERSION} ~/.terraform.d/plugins/evroc-oss/evroc/${VERSION}/${OS}_${ARCH}/
 ```
 
 </details>
@@ -66,47 +124,17 @@ mv terraform-provider-evroc_v${VERSION} ~/.terraform.d/plugins/github.com/evroc-
 <details>
 <summary><strong>Windows</strong></summary>
 
-1. Download the latest `terraform-provider-evroc_<VERSION>_windows_amd64.zip` file from [GitHub Releases](https://github.com/evroc-oss/terraform-provider-evroc/releases).
-2. Extract the `.zip` file.
-3. Create the plugin directory and move the binary:
-
 ```powershell
-# Fetch latest version automatically
 $VERSION = (Invoke-RestMethod -Uri "https://api.github.com/repos/evroc-oss/terraform-provider-evroc/releases/latest").tag_name -replace '^v',''
-New-Item -ItemType Directory -Force -Path "$env:APPDATA\terraform.d\plugins\github.com\evroc-oss\evroc\$VERSION\windows_amd64"
-Move-Item terraform-provider-evroc_v$VERSION.exe "$env:APPDATA\terraform.d\plugins\github.com\evroc-oss\evroc\$VERSION\windows_amd64\"
+New-Item -ItemType Directory -Force -Path "$env:APPDATA\terraform.d\plugins\evroc-oss\evroc\$VERSION\windows_amd64"
+Move-Item terraform-provider-evroc_v$VERSION.exe "$env:APPDATA\terraform.d\plugins\evroc-oss\evroc\$VERSION\windows_amd64\"
 ```
 
 </details>
 
-**Configure your Terraform project** — create a `main.tf` file:
-
-```hcl
-terraform {
-  required_providers {
-    evroc = {
-      source  = "github.com/evroc-oss/evroc"
-      version = "~> 0.4"
-    }
-  }
-}
-
-provider "evroc" {}
-```
-
-Then initialize the provider:
-
-```bash
-terraform init
-```
-
-This downloads and installs the provider plugin. No infrastructure is created yet — you'll define resources in the next sections, then iterate with `terraform plan` and `terraform apply` to preview and apply changes.
-
-> **Note:** The `terraform init` warning about "unauthenticated" provider and incomplete lock file checksums is expected for providers installed from GitHub. The provider binary is signed — see [Security](#security) for verification instructions.
-
 ---
 
-### Option 2: Build from Source
+### Option 3: Build from Source
 
 For development or when you need the latest unreleased changes.
 
@@ -118,18 +146,18 @@ make install
 
 This builds the provider and installs it to `~/.terraform.d/plugins/github.com/evroc-oss/evroc/<VERSION>/linux_amd64/` (or `%APPDATA%\terraform.d\plugins\` on Windows), where `<VERSION>` is the Makefile's `VERSION` variable.
 
-**Configure Terraform to use the local build** — create (or update) `~/.terraformrc` (Linux/macOS) or `%APPDATA%\terraform.rc` (Windows) with a `dev_overrides` block:
+**Configure Terraform to use the local build** — create (or update) `~/.terraformrc` (Linux/macOS) or `%APPDATA%\terraform.rc` (Windows) with a `dev_overrides` block. For OpenTofu, use `~/.tofurc` or `%APPDATA%\tofu.rc` instead.
 
 ```hcl
 provider_installation {
   dev_overrides {
-    "github.com/evroc-oss/evroc" = "/home/<your-user>/.terraform.d/plugins/github.com/evroc-oss/evroc/<VERSION>/linux_amd64"
+    "evroc-oss/evroc" = "/home/<your-user>/.terraform.d/plugins/evroc-oss/evroc/<VERSION>/linux_amd64"
   }
   direct {}
 }
 ```
 
-> **The version in the path must match the version used by `make install`.** Check the `VERSION` variable in the Makefile for the current default. If you override it (e.g. `make install VERSION=1.0.0`), update the path in `~/.terraformrc` to match.
+> **The version in the path must match the version used by `make install`.** Check the `VERSION` variable in the Makefile for the current default. If you override it (e.g. `make install VERSION=1.0.0`), update the path accordingly.
 
 Adjust the path for your OS/architecture (e.g., `darwin_arm64` for Apple Silicon). On Windows, use forward slashes: `C:/Users/<your-user>/AppData/Roaming/terraform.d/plugins/...`.
 
@@ -245,7 +273,7 @@ Create a file named `main.tf`:
 terraform {
   required_providers {
     evroc = {
-      source  = "github.com/evroc-oss/evroc"
+      source  = "evroc-oss/evroc"
       version = "~> 0.4"
     }
   }
@@ -355,7 +383,8 @@ output "ssh_command" {
 ### 3. Deploy Your Infrastructure
 
 ```bash
-# If using dev_overrides (local build), skip terraform init:
+# Preview what will be created
+# Preview what will be created
 terraform plan
 
 # Apply the configuration to create resources
@@ -367,6 +396,7 @@ terraform apply
 After a few minutes, your VM will be running! You can SSH into it:
 
 ```bash
+# Get the SSH command from the output
 # Get the SSH command from Terraform output
 terraform output -raw ssh_command
 
@@ -379,6 +409,7 @@ ssh evroc-user@$(terraform output -raw web_server_ip)
 When you're done testing:
 
 ```bash
+# Destroy all resources
 # Destroy all resources created by Terraform
 terraform destroy
 ```
@@ -422,7 +453,7 @@ The provider supports multiple authentication methods (see [Quick Start](#1-auth
 
 ### Remote State Backend (evroc S3)
 
-You can use an evroc S3-compatible bucket to store your Terraform state remotely. This enables team collaboration and state locking.
+You can use an evroc S3-compatible bucket to store your state remotely. This enables team collaboration and state locking. Works with both OpenTofu and Terraform.
 
 **1. Create a bucket and service account** (via Terraform or the console), then configure the backend:
 
@@ -542,7 +573,7 @@ See [TESTING.md](TESTING.md) for comprehensive testing documentation.
 
 ### Importing Existing Infrastructure
 
-Already have evroc resources deployed? You can bring them under Terraform management without recreating anything.
+Already have evroc resources deployed? You can bring them under management without recreating anything.
 
 **Option A: Automated discovery (recommended)**
 
@@ -556,7 +587,7 @@ Use the included script to enumerate all resources in your project and generate 
 #   my-project/provider.tf   - Provider configuration
 #   my-project/imports.tf    - Import blocks for all discovered resources
 
-# Then let Terraform generate the .tf configuration:
+# Then generate the .tf configuration:
 cd my-project
 terraform plan -generate-config-out=generated.tf
 
@@ -572,7 +603,7 @@ EVROC_CLI=/path/to/evroc ./scripts/generate-imports.sh ./my-project
 
 **Option B: Manual import (single resources)**
 
-For importing individual resources, use Terraform's native `import` block:
+For importing individual resources, use the native `import` block:
 
 ```hcl
 import {
@@ -587,13 +618,13 @@ Then run:
 terraform plan -generate-config-out=generated.tf
 ```
 
-Terraform calls the provider's Read function and writes the full resource block into `generated.tf`.
+The provider's Read function is called and the full resource block is written into `generated.tf`.
 
 ## Features
 
-- **Declarative Infrastructure** - Define your desired state, Terraform handles the rest
+- **Declarative Infrastructure** - Define your desired state, the tool handles the rest
 - **Plan Before Apply** - Preview changes before making them
-- **Dependency Management** - Terraform understands resource dependencies
+- **Dependency Management** - Automatic resource dependency resolution
 - **State Management** - Track infrastructure state and detect drift
 - **Import Existing Resources** - Bring existing evroc resources under Terraform management
 - **Parallel Execution** - Create/update/delete resources concurrently when possible

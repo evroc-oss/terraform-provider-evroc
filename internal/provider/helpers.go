@@ -66,9 +66,9 @@ func BuildPublicIPCreateRequest(name string, userLabels map[string]string) *netw
 }
 
 // BuildVirtualMachineCreateRequest creates a properly formatted VirtualMachine request using SDK builder.
-// Reference fields (bootDisk, publicIP, securityGroups, placementGroup) accept either plain names
+// Reference fields (bootDisk, dataDisks, publicIP, securityGroups, placementGroup) accept either plain names
 // or fully-qualified IDs (FQIDs). Plain names are resolved using the client's default project/region.
-func BuildVirtualMachineCreateRequest(client *evroc.Client, name, flavor, bootDisk string, sshKeys []string, userData, publicIP, zone string, securityGroups []string, placementGroup string, running bool, userLabels map[string]string) *computetypes.VirtualMachineRequest {
+func BuildVirtualMachineCreateRequest(client *evroc.Client, name, flavor, bootDisk string, dataDisks []string, sshKeys []string, userData, publicIP, zone string, securityGroups []string, placementGroup string, running bool, userLabels map[string]string) *computetypes.VirtualMachineRequest {
 	// Resolve boot disk ref: FQID pass-through or name → FQID
 	diskRef := client.Compute().DiskRef(bootDisk)
 	if isFQID(bootDisk) {
@@ -79,6 +79,14 @@ func BuildVirtualMachineCreateRequest(client *evroc.Client, name, flavor, bootDi
 		WithSize(flavor).
 		WithBootDisk(diskRef).
 		WithRunning(running)
+
+	for _, dd := range dataDisks {
+		ddRef := client.Compute().DiskRef(dd)
+		if isFQID(dd) {
+			ddRef = computetypes.DiskRef(dd)
+		}
+		builder = builder.WithDataDisk(ddRef)
+	}
 
 	for _, key := range sshKeys {
 		builder = builder.WithSSHKey(key)

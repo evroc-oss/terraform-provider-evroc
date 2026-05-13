@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-05-13
+
+### Added
+- `data_disks` attribute on `evroc_virtual_machine` resource and data source for managing additional data disks
+
+### Changed
+- README updated for official Terraform and OpenTofu registry listings
+
 ## [0.4.1] - 2026-05-06
 
 ### Added
@@ -57,5 +65,7 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.2
+[0.4.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.1
 [0.4.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.0

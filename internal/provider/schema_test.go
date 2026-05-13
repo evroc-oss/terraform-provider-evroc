@@ -29,7 +29,7 @@ func TestResourceSchemas(t *testing.T) {
 			name:           "evroc_virtual_machine",
 			resource:       resourceVirtualMachine(),
 			requiredFields: []string{"name", "flavor", "boot_disk", "zone"},
-			optionalFields: []string{"ssh_keys", "cloud_config_user_data", "public_ip", "security_groups", "region", "placement_group", "running", "user_labels"},
+			optionalFields: []string{"ssh_keys", "cloud_config_user_data", "public_ip", "security_groups", "region", "placement_group", "running", "user_labels", "data_disks"},
 			computedFields: []string{"vm_id", "system_labels", "created_at", "status", "public_ipv4_address", "private_ipv4_address", "fqid"},
 		},
 		{
@@ -223,7 +223,7 @@ func TestDataSourceSchemas(t *testing.T) {
 			name:           "evroc_virtual_machine (data)",
 			resource:       dataSourceVirtualMachine(),
 			requiredFields: []string{"name"},
-			computedFields: []string{"vm_id", "created_at", "fqid"},
+			computedFields: []string{"vm_id", "created_at", "fqid", "data_disks"},
 		},
 		{
 			name:           "evroc_public_ip (data)",
@@ -476,7 +476,7 @@ func TestResourceForceNewFields(t *testing.T) {
 		{
 			name:           "evroc_virtual_machine",
 			resource:       resourceVirtualMachine(),
-			forceNewFields: []string{"name", "boot_disk", "zone"},
+			forceNewFields: []string{"name", "boot_disk", "zone", "data_disks"},
 			mutableFields:  []string{"flavor", "running", "public_ip", "security_groups", "placement_group", "user_labels"},
 		},
 		{

@@ -3,12 +3,12 @@
 page_title: "evroc_virtual_machine Resource - evroc"
 subcategory: ""
 description: |-
-  Provides an evroc virtual machine resource. A boot disk is required at creation time. Additional disks can be attached to a running VM using the evroc_hotswap_disk_attachment resource.
+  Provides an evroc virtual machine resource. A boot disk is required at creation time. Additional data disks can be attached at creation via data_disks or to a running VM using the evroc_hotswap_disk_attachment resource.
 ---
 
 # evroc_virtual_machine (Resource)
 
-Provides an evroc virtual machine resource. A boot disk is required at creation time. Additional disks can be attached to a running VM using the `evroc_hotswap_disk_attachment` resource.
+Provides an evroc virtual machine resource. A boot disk is required at creation time. Additional data disks can be attached at creation via `data_disks` or to a running VM using the `evroc_hotswap_disk_attachment` resource.
 
 
 
@@ -25,6 +25,7 @@ Provides an evroc virtual machine resource. A boot disk is required at creation 
 ### Optional
 
 - `cloud_config_user_data` (String) Cloud-init user data script.
+- `data_disks` (List of String) List of additional data disks to attach at creation time. Accepts FQIDs or plain names.
 - `placement_group` (String) Placement group name for VM placement control (e.g., for HA configurations). Accepts FQID or plain name.
 - `project` (String) Project this resource belongs to. Defaults to the provider project.
 - `public_ip` (String) Name of the public IP to attach to the VM. Accepts FQID or plain name.
