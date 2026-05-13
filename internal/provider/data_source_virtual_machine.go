@@ -52,6 +52,14 @@ func dataSourceVirtualMachine() *schema.Resource {
 				Computed:    true,
 				Description: "Name of the boot disk.",
 			},
+			"data_disks": {
+				Type:        schema.TypeList,
+				Computed:    true,
+				Description: "List of FQIDs of additional data disks attached to the VM.",
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"ssh_keys": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -113,13 +121,18 @@ func dataSourceVirtualMachineRead(ctx context.Context, d *schema.ResourceData, m
 	flavor := path.Base(vm.Spec.ComputeProfileRef)
 	diags = setDiag(d, "flavor", flavor, diags)
 
-	// Set boot disk (find the disk with bootFrom = true)
+	// Set boot disk and data disks
 	if vm.Spec.Disks != nil {
+		var dataDisks []string
 		for _, diskRef := range *vm.Spec.Disks {
 			if diskRef.BootFrom != nil && *diskRef.BootFrom {
 				diags = setDiag(d, "boot_disk", diskRef.DiskRef, diags)
-				break
+			} else {
+				dataDisks = append(dataDisks, diskRef.DiskRef)
 			}
+		}
+		if len(dataDisks) > 0 {
+			diags = setDiag(d, "data_disks", dataDisks, diags)
 		}
 	}
 

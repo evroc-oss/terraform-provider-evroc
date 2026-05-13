@@ -18,7 +18,7 @@ import (
 func resourceVirtualMachine() *schema.Resource {
 	return &schema.Resource{
 		Description: "Provides an evroc virtual machine resource. A boot disk is required at creation time. " +
-			"Additional disks can be attached to a running VM using the `evroc_hotswap_disk_attachment` resource.",
+			"Additional data disks can be attached at creation via `data_disks` or to a running VM using the `evroc_hotswap_disk_attachment` resource.",
 
 		CreateContext: resourceVirtualMachineCreate,
 		ReadContext:   resourceVirtualMachineRead,
@@ -60,6 +60,15 @@ func resourceVirtualMachine() *schema.Resource {
 				ForceNew:         true,
 				DiffSuppressFunc: suppressFQIDDiff,
 				Description:      "Name of the disk to use as boot disk. Accepts FQID or plain name.",
+			},
+			"data_disks": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "List of additional data disks to attach at creation time. Accepts FQIDs or plain names.",
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 			"ssh_keys": {
 				Type:        schema.TypeList,
@@ -215,6 +224,13 @@ func resourceVirtualMachineCreate(ctx context.Context, d *schema.ResourceData, m
 		placementGroup = pg.(string)
 	}
 
+	var dataDisks []string
+	if dds, ok := d.GetOk("data_disks"); ok {
+		for _, dd := range dds.([]interface{}) {
+			dataDisks = append(dataDisks, dd.(string))
+		}
+	}
+
 	running := d.Get("running").(bool)
 
 	// Get user labels
@@ -227,7 +243,7 @@ func resourceVirtualMachineCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	// Build VM create request using SDK builder
-	req := BuildVirtualMachineCreateRequest(client, name, flavor, bootDisk, sshKeys, userData, publicIP, zone, securityGroups, placementGroup, running, userLabels)
+	req := BuildVirtualMachineCreateRequest(client, name, flavor, bootDisk, dataDisks, sshKeys, userData, publicIP, zone, securityGroups, placementGroup, running, userLabels)
 
 	vm, err := client.Compute().VirtualMachines().Create(ctx, req)
 	if err != nil {
@@ -294,14 +310,23 @@ func setVMBasicFields(d *schema.ResourceData, vm *computetypes.VirtualMachine, d
 }
 
 func setVMDiskFields(d *schema.ResourceData, vm *computetypes.VirtualMachine, diags diag.Diagnostics) diag.Diagnostics {
-	if vm.Spec.Disks != nil {
-		for _, diskRef := range *vm.Spec.Disks {
-			if diskRef.BootFrom != nil && *diskRef.BootFrom {
-				diags = setDiag(d, "boot_disk", diskRef.DiskRef, diags)
-				break
-			}
+	if vm.Spec.Disks == nil {
+		return diags
+	}
+
+	var dataDisks []string
+	for _, diskRef := range *vm.Spec.Disks {
+		if diskRef.BootFrom != nil && *diskRef.BootFrom {
+			diags = setDiag(d, "boot_disk", diskRef.DiskRef, diags)
+		} else {
+			dataDisks = append(dataDisks, diskRef.DiskRef)
 		}
 	}
+
+	if len(dataDisks) > 0 {
+		diags = setDiag(d, "data_disks", dataDisks, diags)
+	}
+
 	return diags
 }
 

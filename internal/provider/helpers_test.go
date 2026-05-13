@@ -486,6 +486,7 @@ func TestBuildVirtualMachineCreateRequest(t *testing.T) {
 		vmName         string
 		flavor         string
 		bootDisk       string
+		dataDisks      []string
 		sshKeys        []string
 		userData       string
 		publicIP       string
@@ -507,6 +508,7 @@ func TestBuildVirtualMachineCreateRequest(t *testing.T) {
 			vmName:         "full-vm",
 			flavor:         "c1a.m",
 			bootDisk:       "boot-disk",
+			dataDisks:      []string{"data-disk-1", "data-disk-2"},
 			sshKeys:        []string{"ssh-ed25519 AAAA...", "ssh-rsa AAAA..."},
 			userData:       "#cloud-config\npackages:\n  - nginx",
 			publicIP:       "my-public-ip",
@@ -529,6 +531,7 @@ func TestBuildVirtualMachineCreateRequest(t *testing.T) {
 			vmName:         "fqid-vm",
 			flavor:         "a1a.s",
 			bootDisk:       "/compute/projects/other-proj/regions/se-sto/disks/boot-disk",
+			dataDisks:      []string{"/compute/projects/other-proj/regions/se-sto/disks/extra-disk"},
 			publicIP:       "/networking/projects/other-proj/regions/se-sto/publicIPs/my-ip",
 			securityGroups: []string{"/networking/projects/other-proj/regions/se-sto/securityGroups/sg-1"},
 			placementGroup: "/compute/projects/other-proj/regions/se-sto/placementGroups/my-pg",
@@ -552,7 +555,7 @@ func TestBuildVirtualMachineCreateRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := BuildVirtualMachineCreateRequest(
 				config.Client, tt.vmName, tt.flavor, tt.bootDisk,
-				tt.sshKeys, tt.userData, tt.publicIP, tt.zone,
+				tt.dataDisks, tt.sshKeys, tt.userData, tt.publicIP, tt.zone,
 				tt.securityGroups, tt.placementGroup, tt.running, tt.userLabels,
 			)
 			if req == nil {
@@ -576,6 +579,14 @@ func TestBuildVirtualMachineCreateRequest(t *testing.T) {
 				}
 				if !isFQID(tt.bootDisk) && !isFQID(diskRef) {
 					t.Errorf("plain boot disk should be resolved to FQID, got %q", diskRef)
+				}
+			}
+
+			// Verify data disks are included
+			if req.Spec.Disks != nil {
+				expectedTotal := 1 + len(tt.dataDisks) // boot + data
+				if len(*req.Spec.Disks) != expectedTotal {
+					t.Errorf("expected %d disks, got %d", expectedTotal, len(*req.Spec.Disks))
 				}
 			}
 		})
