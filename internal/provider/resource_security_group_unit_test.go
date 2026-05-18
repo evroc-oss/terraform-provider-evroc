@@ -23,6 +23,39 @@ func TestExpandSecurityGroupRules(t *testing.T) {
 		}
 	})
 
+	t.Run("null entries from set diff are skipped", func(t *testing.T) {
+		input := []interface{}{
+			map[string]interface{}{
+				"name":                  "allow-ssh",
+				"direction":             "Ingress",
+				"protocol":              "TCP",
+				"port":                  22,
+				"end_port":              0,
+				"remote_ip":             "0.0.0.0/0",
+				"remote_security_group": "",
+				"remote_subnet":         "",
+			},
+			map[string]interface{}{
+				"name":                  "",
+				"direction":             "",
+				"protocol":              "",
+				"port":                  0,
+				"end_port":              0,
+				"remote_ip":             "",
+				"remote_security_group": "",
+				"remote_subnet":         "",
+			},
+		}
+
+		result := expandSecurityGroupRules(config.Client, input)
+		if len(result) != 1 {
+			t.Errorf("expected 1 rule (null entry skipped), got %d", len(result))
+		}
+		if len(result) > 0 && *result[0].Name != "allow-ssh" {
+			t.Errorf("expected surviving rule to be allow-ssh, got %q", *result[0].Name)
+		}
+	})
+
 	t.Run("single ingress rule", func(t *testing.T) {
 		input := []interface{}{
 			map[string]interface{}{

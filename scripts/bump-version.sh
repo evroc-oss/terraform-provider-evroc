@@ -98,21 +98,8 @@ if [ -f "README.md" ]; then
     UPDATED_FILES+=("README.md")
 fi
 
-# 4. Update docs/VERIFICATION.md — VERSION= references
-if [ -f "docs/VERIFICATION.md" ]; then
-    echo "Updating docs/VERIFICATION.md..."
-    sed -i "s|VERSION=\"v[0-9]*\.[0-9]*\.[0-9]*\"|VERSION=\"v$NEW_VERSION\"|g" docs/VERIFICATION.md
-    UPDATED_FILES+=("docs/VERIFICATION.md")
-fi
-
-# 5. Update docs/RELEASING.md — version references
-if [ -f "docs/RELEASING.md" ]; then
-    echo "Updating docs/RELEASING.md..."
-    sed -i "s|VERSION=\"v[0-9]*\.[0-9]*\.[0-9]*\"|VERSION=\"v$NEW_VERSION\"|g" docs/RELEASING.md
-    sed -i "s|--tag v[0-9]*\.[0-9]*\.[0-9]*|--tag v$NEW_VERSION|g" docs/RELEASING.md
-    sed -i "s|Bump version to v[0-9]*\.[0-9]*\.[0-9]*|Bump version to v$NEW_VERSION|g" docs/RELEASING.md
-    UPDATED_FILES+=("docs/RELEASING.md")
-fi
+# docs/VERIFICATION.md and docs/RELEASING.md use generic placeholders (vX.Y.Z)
+# and no longer need version-specific updates.
 
 # Stage and commit (no tag — tag is created via sync script)
 echo ""
