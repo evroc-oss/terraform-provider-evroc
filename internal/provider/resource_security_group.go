@@ -313,14 +313,22 @@ func expandSecurityGroupRules(client *evroc.Client, rules []interface{}) []netwo
 		rule := r.(map[string]interface{})
 
 		name := rule["name"].(string)
+		direction := rule["direction"].(string)
+		protocol := rule["protocol"].(string)
+
+		// Skip null/empty entries produced by Terraform's set diff when a rule is removed
+		if name == "" && direction == "" && protocol == "" {
+			continue
+		}
+
 		sgRule := networkingtypes.SecurityGroupSpecRulesItem{
 			Name:      &name,
-			Direction: networkingtypes.SecurityGroupSpecRulesItemDirection(rule["direction"].(string)),
+			Direction: networkingtypes.SecurityGroupSpecRulesItemDirection(direction),
 		}
 
 		// Protocol
-		protocol := networkingtypes.SecurityGroupSpecRulesItemProtocol(rule["protocol"].(string))
-		sgRule.Protocol = &protocol
+		proto := networkingtypes.SecurityGroupSpecRulesItemProtocol(protocol)
+		sgRule.Protocol = &proto
 
 		// Port
 		if port, ok := rule["port"].(int); ok && port > 0 {

@@ -39,7 +39,7 @@ Cosign uses **keyless signing** via GitHub OIDC (no keys to manage).
 **Download checksums and Cosign signature:**
 
 ```bash
-VERSION="v0.4.2"  # Replace with desired version
+VERSION="vX.Y.Z"  # Replace with desired version  # Replace with desired version
 BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
 curl -LO "${BASE_URL}/terraform-provider-evroc_${VERSION#v}_SHA256SUMS"
@@ -77,7 +77,7 @@ The SBOM provides transparency about all dependencies and components.
 **Download SBOM:**
 
 ```bash
-VERSION="v0.4.2"
+VERSION="vX.Y.Z"  # Replace with desired version
 BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
 curl -LO "${BASE_URL}/sbom.spdx.json"
@@ -123,7 +123,7 @@ SLSA provenance proves the artifact was built by the expected workflow in a trus
 **Download provenance:**
 
 ```bash
-VERSION="v0.4.2"
+VERSION="vX.Y.Z"  # Replace with desired version
 BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
 curl -LO "${BASE_URL}/provenance.json"
@@ -164,7 +164,7 @@ Here's a complete script to verify a release:
 #!/bin/bash
 set -e
 
-VERSION="v0.4.2"
+VERSION="vX.Y.Z"  # Replace with desired version
 PLATFORM="linux_amd64"
 BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
@@ -203,7 +203,7 @@ You can automate verification in your CI/CD pipelines:
 # GitHub Actions example
 - name: Verify Terraform Provider
   run: |
-    VERSION="v0.4.2"
+    VERSION="vX.Y.Z"  # Replace with desired version
     BASE_URL="https://github.com/evroc-oss/terraform-provider-evroc/releases/download/${VERSION}"
 
     # Install cosign

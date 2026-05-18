@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-05-15
+
+### Fixed
+- Security group rule removal causing 422 error due to null/empty ghost entries in Terraform's set diff
+
 ## [0.4.2] - 2026-05-13
 
 ### Added
@@ -65,7 +70,8 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.4.3...HEAD
 [0.4.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.2
 [0.4.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.1
 [0.4.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.0
+[0.4.3]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.3
