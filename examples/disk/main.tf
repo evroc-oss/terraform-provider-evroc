@@ -2,7 +2,6 @@ terraform {
   required_providers {
     evroc = {
       source  = "github.com/evroc-oss/evroc"
-      version = "~> 0.4"
     }
   }
 }

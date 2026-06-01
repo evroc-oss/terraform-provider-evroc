@@ -402,13 +402,13 @@ func TestProviderSchema(t *testing.T) {
 	}
 
 	// Verify resource count
-	expectedResources := 12
+	expectedResources := 13
 	if len(p.ResourcesMap) != expectedResources {
 		t.Errorf("expected %d resources, got %d", expectedResources, len(p.ResourcesMap))
 	}
 
 	// Verify data source count
-	expectedDataSources := 15
+	expectedDataSources := 16
 	if len(p.DataSourcesMap) != expectedDataSources {
 		t.Errorf("expected %d data sources, got %d", expectedDataSources, len(p.DataSourcesMap))
 	}
