@@ -276,6 +276,7 @@ func TestFlattenSecurityGroupRules(t *testing.T) {
 					Address          *networkingtypes.SecurityGroupSpecRulesItemAddress `json:"address,omitempty"`
 					SecurityGroupRef *string                                            `json:"securityGroupRef,omitempty"`
 					SubnetRef        *string                                            `json:"subnetRef,omitempty"`
+					VpcRef           *string                                            `json:"vpcRef,omitempty"`
 				}{
 					Address: &networkingtypes.SecurityGroupSpecRulesItemAddress{
 						IpAddressOrCIDR: "0.0.0.0/0",
@@ -379,6 +380,7 @@ func TestFlattenSecurityGroupRules(t *testing.T) {
 					Address          *networkingtypes.SecurityGroupSpecRulesItemAddress `json:"address,omitempty"`
 					SecurityGroupRef *string                                            `json:"securityGroupRef,omitempty"`
 					SubnetRef        *string                                            `json:"subnetRef,omitempty"`
+					VpcRef           *string                                            `json:"vpcRef,omitempty"`
 				}{
 					SecurityGroupRef: &sgRef,
 				},

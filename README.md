@@ -54,7 +54,6 @@ terraform {
   required_providers {
     evroc = {
       source  = "evroc-oss/evroc"
-      version = "~> 0.4"
     }
   }
 }
@@ -79,7 +78,6 @@ terraform {
   required_providers {
     evroc = {
       source  = "evroc-oss/evroc"
-      version = "~> 0.4"  # Update to desired version
     }
   }
 }
@@ -274,7 +272,6 @@ terraform {
   required_providers {
     evroc = {
       source  = "evroc-oss/evroc"
-      version = "~> 0.4"
     }
   }
 }

@@ -46,12 +46,6 @@ CURRENT_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || e
 echo "Current version: $CURRENT_VERSION"
 echo "New version: $NEW_VERSION"
 
-# Extract major.minor for Terraform constraint (~> X.Y)
-MAJOR=$(echo "$NEW_VERSION" | cut -d. -f1)
-MINOR=$(echo "$NEW_VERSION" | cut -d. -f2)
-TF_CONSTRAINT="~> ${MAJOR}.${MINOR}"
-
-echo "Terraform constraint: $TF_CONSTRAINT"
 echo ""
 
 # Track updated files
@@ -80,26 +74,15 @@ if [ -f "$CHANGELOG_FILE" ]; then
     UPDATED_FILES+=("$CHANGELOG_FILE")
 fi
 
-# 2. Update examples/*/main.tf — version constraint
-echo "Updating examples..."
-for tf_file in examples/*/main.tf; do
-    if [ -f "$tf_file" ] && grep -q 'version.*=.*"~>' "$tf_file"; then
-        sed -i "s|version.*=.*\"~>.*\"|version = \"$TF_CONSTRAINT\"|" "$tf_file"
-        UPDATED_FILES+=("$tf_file")
-        echo "   $tf_file"
-    fi
-done
-
-# 3. Update README.md — version constraints and VERSION= references
-if [ -f "README.md" ]; then
-    echo "Updating README.md..."
-    sed -i "s|version = \"~> [0-9]*\.[0-9]*\"|version = \"$TF_CONSTRAINT\"|g" README.md
-    sed -i "s|VERSION=\"v[0-9]*\.[0-9]*\.[0-9]*\"|VERSION=\"v$NEW_VERSION\"|g" README.md
-    UPDATED_FILES+=("README.md")
+# 2. Update Makefile VERSION
+if [ -f "Makefile" ]; then
+    echo "Updating Makefile..."
+    sed -i "s|^VERSION?=.*|VERSION?=$NEW_VERSION|" Makefile
+    UPDATED_FILES+=("Makefile")
 fi
 
-# docs/VERIFICATION.md and docs/RELEASING.md use generic placeholders (vX.Y.Z)
-# and no longer need version-specific updates.
+# README.md, docs/VERIFICATION.md, docs/RELEASING.md, and examples use generic
+# placeholders or no version constraints, so they don't need version-specific updates.
 
 # Stage and commit (no tag — tag is created via sync script)
 echo ""
