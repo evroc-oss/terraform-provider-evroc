@@ -134,8 +134,8 @@ func TestValidateObjectRetentionMode(t *testing.T) {
 }
 
 func TestValidateObjectLockingMode(t *testing.T) {
-	validValues := []string{"GOVERNANCE", "COMPLIANCE"}
-	invalidValues := []string{"governance", "compliance", "Governance", ""}
+	validValues := []string{"Soft", "Immutable"}
+	invalidValues := []string{"soft", "immutable", "governance", ""}
 
 	validator := validateObjectLockingMode()
 

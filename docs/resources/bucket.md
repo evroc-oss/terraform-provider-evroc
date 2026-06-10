@@ -41,7 +41,7 @@ Manages an evroc S3-compatible storage bucket with object retention and locking 
 Required:
 
 - `duration_days` (Number) Duration in days for the default lock.
-- `mode` (String) Lock mode: GOVERNANCE or COMPLIANCE.
+- `mode` (String) Lock mode: Soft or Immutable.
 
 
 <a id="nestedblock--timeouts"></a>

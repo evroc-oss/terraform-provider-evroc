@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-10
+
+### Fixed
+- Object locking mode validator accepted `GOVERNANCE` and `COMPLIANCE` instead of the API-accepted values `Soft` and `Immutable`
+
 ## [0.5.0] - 2026-06-01
 
 ### Added
@@ -78,7 +83,8 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.5.1
 [0.4.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.2
 [0.4.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.1
 [0.4.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.0

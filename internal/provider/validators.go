@@ -43,7 +43,7 @@ func validateObjectRetentionMode() schema.SchemaValidateDiagFunc {
 
 // validateObjectLockingMode validates bucket object locking mode
 func validateObjectLockingMode() schema.SchemaValidateDiagFunc {
-	return validation.ToDiagFunc(validation.StringInSlice([]string{"GOVERNANCE", "COMPLIANCE", "Soft"}, false))
+	return validation.ToDiagFunc(validation.StringInSlice([]string{"Soft", "Immutable"}, false))
 }
 
 // validateCIDR validates that a string is a valid CIDR notation
