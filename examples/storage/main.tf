@@ -29,7 +29,7 @@ resource "evroc_bucket" "locked_data" {
   object_retention_mode = "Locking"
 
   object_locking {
-    mode          = "GOVERNANCE"
+    mode          = "Soft"
     duration_days = 30
   }
 }

@@ -1,6 +1,6 @@
 module github.com/evroc-oss/terraform-provider-evroc
 
-go 1.25.0
+go 1.25.11
 
 require (
 	github.com/evroc-oss/evroc-go-sdk v0.5.0

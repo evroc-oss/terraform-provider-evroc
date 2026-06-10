@@ -63,7 +63,7 @@ func resourceBucket() *schema.Resource {
 							Type:             schema.TypeString,
 							Required:         true,
 							ValidateDiagFunc: validateObjectLockingMode(),
-							Description:      "Lock mode: GOVERNANCE or COMPLIANCE.",
+							Description:      "Lock mode: Soft or Immutable.",
 						},
 						"duration_days": {
 							Type:             schema.TypeInt,
