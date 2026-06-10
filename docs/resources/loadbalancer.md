@@ -1,0 +1,93 @@
+---
+page_title: "evroc_loadbalancer Resource - evroc"
+subcategory: ""
+description: |-
+  Provides an evroc Layer 4 (TCP) load balancer resource for distributing traffic across backend targets.
+---
+
+# evroc_loadbalancer (Resource)
+
+Provides an evroc Layer 4 (TCP) load balancer resource for distributing traffic across backend targets.
+
+Use this resource together with `evroc_lb_backend_pool`, `evroc_lb_backend_service`, and `evroc_lb_l4_route` to compose a complete load balancing setup.
+
+## Example Usage
+
+```terraform
+resource "evroc_lb_backend_pool" "web" {
+  name         = "web-pool"
+  backend_refs = [evroc_virtual_machine.web1.fqid, evroc_virtual_machine.web2.fqid]
+}
+
+resource "evroc_lb_backend_service" "web" {
+  name             = "web-svc"
+  port             = 8080
+  backend_pool_ref = evroc_lb_backend_pool.web.fqid
+}
+
+resource "evroc_lb_l4_route" "web" {
+  name                        = "web-route"
+  default_backend_service_ref = evroc_lb_backend_service.web.fqid
+}
+
+resource "evroc_loadbalancer" "web" {
+  name          = "web-lb"
+  public_ip_ref = evroc_public_ip.lb_ip.fqid
+
+  listener {
+    name       = "http"
+    protocol   = "TCP"
+    port       = 80
+    route_refs = [evroc_lb_l4_route.web.fqid]
+  }
+
+  user_labels = {
+    environment = "production"
+  }
+}
+```
+
+## Schema
+
+### Required
+
+- `listener` (Block Set, Min: 1) List of listeners for the load balancer. (see [below for nested schema](#nestedblock--listener))
+- `name` (String) Name of the load balancer. Must be unique within the project.
+- `public_ip_ref` (String) Fully qualified reference to the public IP for the load balancer (e.g., `evroc_public_ip.my_ip.fqid`).
+
+### Optional
+
+- `project` (String) Project this resource belongs to. Defaults to the provider project.
+- `region` (String) Region where the load balancer is created. Defaults to provider region.
+- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
+
+### Read-Only
+
+- `created_at` (String) Timestamp when the load balancer was created (RFC3339 format).
+- `fqid` (String) Fully qualified resource ID (FQID). Use this to reference this resource from other resources.
+- `id` (String) The ID of this resource.
+- `lb_id` (String) Unique identifier (UUID) of the load balancer.
+- `system_labels` (Map of String) System-managed labels automatically set by evroc (read-only).
+
+<a id="nestedblock--listener"></a>
+### Nested Schema for `listener`
+
+Required:
+
+- `port` (Number) Frontend port that the load balancer listens on.
+- `protocol` (String) Protocol for the listener. Currently only 'TCP' is supported.
+- `route_refs` (Set of String) Fully qualified L4 route references (e.g., `evroc_lb_l4_route.my_route.fqid`).
+
+Optional:
+
+- `name` (String) Name for this listener (e.g., 'web', 'api'). Must be unique per load balancer.
+
+<a id="nestedblock--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String)
+- `delete` (String)
+- `update` (String)

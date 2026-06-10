@@ -1,0 +1,39 @@
+---
+page_title: "evroc_lb_l4_route Data Source - evroc"
+subcategory: ""
+description: |-
+  Get information about an existing evroc load balancer L4 route.
+---
+
+# evroc_lb_l4_route (Data Source)
+
+Get information about an existing evroc load balancer L4 route.
+
+## Example Usage
+
+```terraform
+data "evroc_lb_l4_route" "web" {
+  name = "web-route"
+}
+```
+
+## Schema
+
+### Required
+
+- `name` (String) Name of the L4 route to look up.
+
+### Optional
+
+- `project` (String) Project this resource belongs to. Defaults to the provider project.
+- `region` (String) Region where the L4 route is located.
+
+### Read-Only
+
+- `created_at` (String) Timestamp when the L4 route was created (RFC3339 format).
+- `default_backend_service_ref` (String) Fully qualified reference to the backend service.
+- `fqid` (String) Fully qualified resource ID (FQID).
+- `id` (String) The ID of this resource.
+- `route_id` (String) Unique identifier (UUID) of the L4 route.
+- `system_labels` (Map of String) System-managed labels (read-only).
+- `user_labels` (Map of String) User-defined labels (key/value pairs).

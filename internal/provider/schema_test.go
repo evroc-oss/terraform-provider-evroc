@@ -1,5 +1,5 @@
-// Copyright 2026 evroc
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 evroc
 
 package provider
 
@@ -87,6 +87,34 @@ func TestResourceSchemas(t *testing.T) {
 			requiredFields: []string{"name", "model"},
 			optionalFields: []string{"size", "region", "running", "user_labels", "project"},
 			computedFields: []string{"instance_id", "system_labels", "created_at", "endpoint", "phase"},
+		},
+		{
+			name:           "evroc_loadbalancer",
+			resource:       resourceLoadBalancer(),
+			requiredFields: []string{"name", "public_ip_ref", "listener"},
+			optionalFields: []string{"region", "user_labels"},
+			computedFields: []string{"lb_id", "system_labels", "created_at", "fqid"},
+		},
+		{
+			name:           "evroc_lb_backend_pool",
+			resource:       resourceLBBackendPool(),
+			requiredFields: []string{"name"},
+			optionalFields: []string{"region", "backend_refs", "user_labels"},
+			computedFields: []string{"pool_id", "system_labels", "created_at", "fqid"},
+		},
+		{
+			name:           "evroc_lb_backend_service",
+			resource:       resourceLBBackendService(),
+			requiredFields: []string{"name", "port", "backend_pool_ref"},
+			optionalFields: []string{"region", "proxy_protocol", "user_labels"},
+			computedFields: []string{"service_id", "system_labels", "created_at", "fqid"},
+		},
+		{
+			name:           "evroc_lb_l4_route",
+			resource:       resourceLBL4Route(),
+			requiredFields: []string{"name", "default_backend_service_ref"},
+			optionalFields: []string{"region", "user_labels"},
+			computedFields: []string{"route_id", "system_labels", "created_at", "fqid"},
 		},
 		{
 			name:           "evroc_think_api_key",
@@ -297,6 +325,30 @@ func TestDataSourceSchemas(t *testing.T) {
 			requiredFields: []string{},
 			computedFields: []string{"sizes"},
 		},
+		{
+			name:           "evroc_loadbalancer (data)",
+			resource:       dataSourceLoadBalancer(),
+			requiredFields: []string{"name"},
+			computedFields: []string{"lb_id", "public_ip_ref", "created_at", "fqid"},
+		},
+		{
+			name:           "evroc_lb_backend_pool (data)",
+			resource:       dataSourceLBBackendPool(),
+			requiredFields: []string{"name"},
+			computedFields: []string{"pool_id", "created_at", "fqid"},
+		},
+		{
+			name:           "evroc_lb_backend_service (data)",
+			resource:       dataSourceLBBackendService(),
+			requiredFields: []string{"name"},
+			computedFields: []string{"service_id", "port", "created_at", "fqid"},
+		},
+		{
+			name:           "evroc_lb_l4_route (data)",
+			resource:       dataSourceLBL4Route(),
+			requiredFields: []string{"name"},
+			computedFields: []string{"route_id", "default_backend_service_ref", "created_at", "fqid"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -402,13 +454,13 @@ func TestProviderSchema(t *testing.T) {
 	}
 
 	// Verify resource count
-	expectedResources := 13
+	expectedResources := 17
 	if len(p.ResourcesMap) != expectedResources {
 		t.Errorf("expected %d resources, got %d", expectedResources, len(p.ResourcesMap))
 	}
 
 	// Verify data source count
-	expectedDataSources := 16
+	expectedDataSources := 20
 	if len(p.DataSourcesMap) != expectedDataSources {
 		t.Errorf("expected %d data sources, got %d", expectedDataSources, len(p.DataSourcesMap))
 	}
@@ -427,6 +479,10 @@ func TestProviderSchema(t *testing.T) {
 		"evroc_think_instance",
 		"evroc_think_api_key",
 		"evroc_permission_set",
+		"evroc_loadbalancer",
+		"evroc_lb_backend_pool",
+		"evroc_lb_backend_service",
+		"evroc_lb_l4_route",
 	}
 	for _, name := range expectedResourceNames {
 		if _, ok := p.ResourcesMap[name]; !ok {
@@ -451,6 +507,10 @@ func TestProviderSchema(t *testing.T) {
 		"evroc_think_models",
 		"evroc_think_sizes",
 		"evroc_permission_set",
+		"evroc_loadbalancer",
+		"evroc_lb_backend_pool",
+		"evroc_lb_backend_service",
+		"evroc_lb_l4_route",
 	}
 	for _, name := range expectedDataSourceNames {
 		if _, ok := p.DataSourcesMap[name]; !ok {
@@ -532,6 +592,30 @@ func TestResourceForceNewFields(t *testing.T) {
 			resource:       resourcePermissionSet(),
 			forceNewFields: []string{"name", "project", "email"},
 			mutableFields:  []string{"admin", "user_labels"},
+		},
+		{
+			name:           "evroc_loadbalancer",
+			resource:       resourceLoadBalancer(),
+			forceNewFields: []string{"name", "public_ip_ref"},
+			mutableFields:  []string{"listener", "user_labels"},
+		},
+		{
+			name:           "evroc_lb_backend_pool",
+			resource:       resourceLBBackendPool(),
+			forceNewFields: []string{"name"},
+			mutableFields:  []string{"backend_refs", "user_labels"},
+		},
+		{
+			name:           "evroc_lb_backend_service",
+			resource:       resourceLBBackendService(),
+			forceNewFields: []string{"name"},
+			mutableFields:  []string{"port", "backend_pool_ref", "proxy_protocol", "user_labels"},
+		},
+		{
+			name:           "evroc_lb_l4_route",
+			resource:       resourceLBL4Route(),
+			forceNewFields: []string{"name"},
+			mutableFields:  []string{"default_backend_service_ref", "user_labels"},
 		},
 	}
 

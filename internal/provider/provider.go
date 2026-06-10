@@ -1,5 +1,5 @@
-// Copyright 2026 evroc
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 evroc
 
 package provider
 
@@ -85,6 +85,10 @@ func New(version string) func() *schema.Provider {
 			ResourcesMap: map[string]*schema.Resource{
 				"evroc_disk":                    resourceDisk(),
 				"evroc_public_ip":               resourcePublicIP(),
+				"evroc_loadbalancer":            resourceLoadBalancer(),
+				"evroc_lb_backend_pool":         resourceLBBackendPool(),
+				"evroc_lb_backend_service":      resourceLBBackendService(),
+				"evroc_lb_l4_route":             resourceLBL4Route(),
 				"evroc_virtual_machine":         resourceVirtualMachine(),
 				"evroc_security_group":          resourceSecurityGroup(),
 				"evroc_placement_group":         resourcePlacementGroup(),
@@ -101,6 +105,10 @@ func New(version string) func() *schema.Provider {
 			DataSourcesMap: map[string]*schema.Resource{
 				"evroc_disk":                    dataSourceDisk(),
 				"evroc_public_ip":               dataSourcePublicIP(),
+				"evroc_loadbalancer":            dataSourceLoadBalancer(),
+				"evroc_lb_backend_pool":         dataSourceLBBackendPool(),
+				"evroc_lb_backend_service":      dataSourceLBBackendService(),
+				"evroc_lb_l4_route":             dataSourceLBL4Route(),
 				"evroc_virtual_machine":         dataSourceVirtualMachine(),
 				"evroc_security_group":          dataSourceSecurityGroup(),
 				"evroc_placement_group":         dataSourcePlacementGroup(),

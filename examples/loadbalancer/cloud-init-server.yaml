@@ -1,0 +1,44 @@
+## template: jinja
+#cloud-config
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 evroc
+hostname: ${hostname}
+
+ssh_pwauth: false
+manage_etc_hosts: localhost
+users:
+  - name: evroc-user
+    gecos: evroc VM user
+    lock_passwd: true
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups:
+      - sudo
+    shell: /bin/bash
+{% if public_ssh_keys %}
+    ssh_authorized_keys:
+{% for pubkey in public_ssh_keys %}
+      - {{ pubkey }}
+{% endfor %}
+{% endif %}
+
+package_update: true
+
+packages:
+  - curl
+
+runcmd:
+%{ if is_first ~}
+  # First control plane: found the embedded-etcd cluster. --tls-san makes the
+  # served API cert valid for the load balancer's public address, so external
+  # clients can reach the API through the LB.
+  - curl -sfL https://get.k3s.io | K3S_TOKEN="${k3s_token}" sh -s - server --cluster-init --tls-san "${lb_host}" --write-kubeconfig-mode "0644"
+%{ else ~}
+  # Secondary control planes join an explicit existing member (the first
+  # control plane's private IP). After joining, k3s discovers all apiservers
+  # and load-balances across them client-side.
+  - sleep 30
+  - curl -sfL https://get.k3s.io | K3S_TOKEN="${k3s_token}" K3S_URL="${server_url}" sh -s - server --tls-san "${lb_host}" --write-kubeconfig-mode "0644"
+%{ endif ~}
+  - until kubectl get nodes; do echo "Waiting for k3s..."; sleep 5; done
+
+final_message: "k3s control plane node ${hostname} ready after $UPTIME seconds"

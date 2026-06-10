@@ -25,8 +25,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
-github.com/evroc-oss/evroc-go-sdk v0.5.0 h1:GFaK7nlfCJ+GLrIXKWiEMGNppu9h0YMiiJ6CMNsVBVw=
-github.com/evroc-oss/evroc-go-sdk v0.5.0/go.mod h1:OtJTCebJFQfOd8qMX6/C5rtadtUSHEWsvINssS2QfSc=
+github.com/evroc-oss/evroc-go-sdk v0.6.0-rc0 h1:lA10Lm1XD9Y17oCEZ3ygxQyzDpu75sokHnGislYiEXs=
+github.com/evroc-oss/evroc-go-sdk v0.6.0-rc0/go.mod h1:OtJTCebJFQfOd8qMX6/C5rtadtUSHEWsvINssS2QfSc=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.18.0 h1:S8gINlzdQ840/4pfAwic/ZE0djQEH3wM94VfqLTZcOM=
 github.com/fatih/color v1.18.0/go.mod h1:4FelSpRwEGDpQ12mAdzqdOukCy4u8WUtOY6lkT/6HfU=
