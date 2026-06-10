@@ -267,7 +267,7 @@ func TestBuildBucketCreateRequest(t *testing.T) {
 			name:            "locked bucket",
 			bucketName:      "locked-bucket",
 			retentionMode:   "Locking",
-			lockingMode:     "GOVERNANCE",
+			lockingMode:     "Soft",
 			lockingDuration: 30,
 		},
 		{

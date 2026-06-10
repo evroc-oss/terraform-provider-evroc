@@ -43,7 +43,7 @@ func dataSourceBucket() *schema.Resource {
 						"mode": {
 							Type:        schema.TypeString,
 							Computed:    true,
-							Description: "Lock mode: GOVERNANCE or COMPLIANCE.",
+							Description: "Lock mode: Soft or Immutable.",
 						},
 						"duration_days": {
 							Type:        schema.TypeInt,
