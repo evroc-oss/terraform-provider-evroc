@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-06-12
+
+### Fixed
+- Security group deletion no longer blocks when removing a SG from a VM and deleting it in the same apply (removed synchronous wait)
+- Security group ordering on VMs no longer causes spurious diffs and "no updates to apply" errors (changed to unordered set)
+- Public IP changes on VMs no longer force an unnecessary stop/start cycle
+
 ## [0.5.1] - 2026-06-10
 
 ### Fixed

@@ -162,6 +162,16 @@ func suppressFQIDDiff(_, old, new string, _ *schema.ResourceData) bool {
 	return false
 }
 
+// securityGroupHash normalizes security group references before hashing so
+// that an FQID and the corresponding plain name produce the same hash value.
+func securityGroupHash(v interface{}) int {
+	s := v.(string)
+	if isFQID(s) {
+		s = path.Base(s)
+	}
+	return schema.HashString(s)
+}
+
 // derefString safely dereferences a string pointer
 func derefString(s *string) string {
 	if s == nil {

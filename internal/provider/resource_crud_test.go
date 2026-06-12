@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -1028,17 +1029,20 @@ func TestResourceVirtualMachineUpdateSecurityGroups(t *testing.T) {
 	setupVirtualMachineHandlers(ms, "test-vm")
 	setupCatchAll(ms)
 
+	oldSGHash := strconv.Itoa(securityGroupHash("/networking/projects/test-project/regions/se-sto/securityGroups/old-sg"))
+	newSGHash := strconv.Itoa(securityGroupHash("/networking/projects/test-project/regions/se-sto/securityGroups/new-sg"))
+
 	config := newTestProviderConfig(t, ms.server.URL)
 	d := newResourceDataWithDiff(t, resourceVirtualMachine(), "test-vm",
 		map[string]string{
-			"name":              "test-vm",
-			"security_groups.#": "1",
-			"security_groups.0": "/networking/projects/test-project/regions/se-sto/securityGroups/old-sg",
+			"name":                         "test-vm",
+			"security_groups.#":            "1",
+			"security_groups." + oldSGHash: "/networking/projects/test-project/regions/se-sto/securityGroups/old-sg",
 		},
 		map[string]*terraform.ResourceAttrDiff{
-			"security_groups.#": {Old: "1", New: "2"},
-			"security_groups.0": {Old: "/networking/projects/test-project/regions/se-sto/securityGroups/old-sg", New: "/networking/projects/test-project/regions/se-sto/securityGroups/old-sg"},
-			"security_groups.1": {Old: "", New: "/networking/projects/test-project/regions/se-sto/securityGroups/new-sg"},
+			"security_groups.#":            {Old: "1", New: "2"},
+			"security_groups." + oldSGHash: {Old: "/networking/projects/test-project/regions/se-sto/securityGroups/old-sg", New: "/networking/projects/test-project/regions/se-sto/securityGroups/old-sg"},
+			"security_groups." + newSGHash: {Old: "", New: "/networking/projects/test-project/regions/se-sto/securityGroups/new-sg"},
 		},
 	)
 
@@ -1055,16 +1059,20 @@ func TestResourceVirtualMachineUpdateSecurityGroupsPlainName(t *testing.T) {
 	setupVirtualMachineHandlers(ms, "test-vm")
 	setupCatchAll(ms)
 
+	oldSGHash := strconv.Itoa(securityGroupHash("/networking/projects/test-project/regions/se-sto/securityGroups/old-sg"))
+	newSGHash := strconv.Itoa(securityGroupHash("new-sg"))
+
 	config := newTestProviderConfig(t, ms.server.URL)
 	d := newResourceDataWithDiff(t, resourceVirtualMachine(), "test-vm",
 		map[string]string{
-			"name":              "test-vm",
-			"security_groups.#": "1",
-			"security_groups.0": "/networking/projects/test-project/regions/se-sto/securityGroups/old-sg",
+			"name":                         "test-vm",
+			"security_groups.#":            "1",
+			"security_groups." + oldSGHash: "/networking/projects/test-project/regions/se-sto/securityGroups/old-sg",
 		},
 		map[string]*terraform.ResourceAttrDiff{
-			"security_groups.#": {Old: "1", New: "1"},
-			"security_groups.0": {Old: "/networking/projects/test-project/regions/se-sto/securityGroups/old-sg", New: "new-sg"},
+			"security_groups.#":            {Old: "1", New: "1"},
+			"security_groups." + oldSGHash: {Old: "/networking/projects/test-project/regions/se-sto/securityGroups/old-sg", New: ""},
+			"security_groups." + newSGHash: {Old: "", New: "new-sg"},
 		},
 	)
 
