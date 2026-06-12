@@ -285,21 +285,8 @@ func resourceSecurityGroupDelete(ctx context.Context, d *schema.ResourceData, me
 	}
 
 	err := client.Networking().SecurityGroups().Delete(ctx, d.Id())
-	if err != nil {
-		// If already deleted, that's okay
-		if !isNotFoundError(err) {
-			return diag.Errorf("error deleting security group %s: %s", d.Id(), err)
-		}
-		// Already deleted, return early
-		d.SetId("")
-		return nil
-	}
-
-	// Wait for deletion to complete
-	timeout := d.Timeout(schema.TimeoutDelete)
-	err = client.Networking().SecurityGroups().WaitForDeleted(ctx, d.Id(), timeout)
-	if err != nil {
-		return diag.Errorf("error waiting for security group %s to be deleted: %s", d.Id(), err)
+	if err != nil && !isNotFoundError(err) {
+		return diag.Errorf("error deleting security group %s: %s", d.Id(), err)
 	}
 
 	d.SetId("")

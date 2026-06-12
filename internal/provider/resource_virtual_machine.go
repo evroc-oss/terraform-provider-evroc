@@ -92,10 +92,10 @@ func resourceVirtualMachine() *schema.Resource {
 				Description:      "Name of the public IP to attach to the VM. Accepts FQID or plain name.",
 			},
 			"security_groups": {
-				Type:             schema.TypeList,
-				Optional:         true,
-				DiffSuppressFunc: suppressFQIDDiff,
-				Description:      "List of security group names to attach to the VM. Accepts FQIDs or plain names.",
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Set:         securityGroupHash,
+				Description: "Set of security group names to attach to the VM. Accepts FQIDs or plain names.",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -214,7 +214,7 @@ func resourceVirtualMachineCreate(ctx context.Context, d *schema.ResourceData, m
 
 	var securityGroups []string
 	if sgs, ok := d.GetOk("security_groups"); ok {
-		for _, sg := range sgs.([]interface{}) {
+		for _, sg := range sgs.(*schema.Set).List() {
 			securityGroups = append(securityGroups, sg.(string))
 		}
 	}
@@ -435,7 +435,7 @@ func resourceVirtualMachineUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	vmService := client.Compute().VirtualMachines()
-	needsStop := d.HasChange("flavor") || d.HasChange("public_ip") || d.HasChange("placement_group")
+	needsStop := d.HasChange("flavor") || d.HasChange("placement_group")
 
 	// Phase 1: Stop VM and wait if any change requires it
 	if needsStop {
@@ -458,11 +458,22 @@ func resourceVirtualMachineUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if d.HasChange("public_ip") {
-		if pip, ok := d.GetOk("public_ip"); ok {
-			pipVal := pip.(string)
-			pipFQID := string(client.Networking().PublicIPRef(pipVal))
-			if isFQID(pipVal) {
-				pipFQID = pipVal
+		oldPIP, newPIP := d.GetChange("public_ip")
+		oldVal := oldPIP.(string)
+		newVal := newPIP.(string)
+
+		// The API requires removing the old IP before attaching a new one.
+		if oldVal != "" && newVal != "" {
+			removeUpdater := compute.UpdateVM(d.Id(), vmService).RemovePublicIP()
+			if _, err := removeUpdater.Apply(ctx); err != nil {
+				return diag.Errorf("error removing old public IP from virtual machine %s: %s", d.Id(), err)
+			}
+		}
+
+		if newVal != "" {
+			pipFQID := string(client.Networking().PublicIPRef(newVal))
+			if isFQID(newVal) {
+				pipFQID = newVal
 			}
 			updater = updater.SetPublicIP(pipFQID)
 		} else {
@@ -522,7 +533,7 @@ func resourceVirtualMachineUpdate(ctx context.Context, d *schema.ResourceData, m
 func applySecurityGroupChanges(updater *compute.VirtualMachineUpdateBuilder, d *schema.ResourceData, client *evroc.Client) *compute.VirtualMachineUpdateBuilder {
 	old, new := d.GetChange("security_groups")
 	oldSet := make(map[string]bool)
-	for _, sg := range old.([]interface{}) {
+	for _, sg := range old.(*schema.Set).List() {
 		sgVal := sg.(string)
 		sgFQID := string(client.Networking().SecurityGroupRef(sgVal))
 		if isFQID(sgVal) {
@@ -531,7 +542,7 @@ func applySecurityGroupChanges(updater *compute.VirtualMachineUpdateBuilder, d *
 		oldSet[sgFQID] = true
 	}
 	newSet := make(map[string]bool)
-	for _, sg := range new.([]interface{}) {
+	for _, sg := range new.(*schema.Set).List() {
 		sgVal := sg.(string)
 		sgFQID := string(client.Networking().SecurityGroupRef(sgVal))
 		if isFQID(sgVal) {

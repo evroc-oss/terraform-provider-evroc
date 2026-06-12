@@ -387,6 +387,23 @@ func TestBuildProjectCreateRequest(t *testing.T) {
 	}
 }
 
+func TestSecurityGroupHash(t *testing.T) {
+	fqid := "/networking/projects/test-project/regions/se-sto/securityGroups/my-sg"
+	plain := "my-sg"
+
+	fqidHash := securityGroupHash(fqid)
+	plainHash := securityGroupHash(plain)
+
+	if fqidHash != plainHash {
+		t.Errorf("FQID and plain name should produce the same hash: FQID=%d, plain=%d", fqidHash, plainHash)
+	}
+
+	otherHash := securityGroupHash("other-sg")
+	if fqidHash == otherHash {
+		t.Errorf("different security groups should produce different hashes: %d == %d", fqidHash, otherHash)
+	}
+}
+
 func TestDerefString(t *testing.T) {
 	tests := []struct {
 		name     string
