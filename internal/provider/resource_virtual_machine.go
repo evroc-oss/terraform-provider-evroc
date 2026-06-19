@@ -5,6 +5,8 @@ package provider
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"path"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/evroc-oss/evroc-go-sdk/compute"
 	computetypes "github.com/evroc-oss/evroc-go-sdk/types/compute"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -458,28 +461,9 @@ func resourceVirtualMachineUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if d.HasChange("public_ip") {
-		oldPIP, newPIP := d.GetChange("public_ip")
-		oldVal := oldPIP.(string)
-		newVal := newPIP.(string)
-
-		// The API requires removing the old IP before attaching a new one.
-		if oldVal != "" && newVal != "" {
-			removeUpdater := compute.UpdateVM(d.Id(), vmService).RemovePublicIP()
-			if _, err := removeUpdater.Apply(ctx); err != nil {
-				return diag.Errorf("error removing old public IP from virtual machine %s: %s", d.Id(), err)
-			}
+		if pipDiags := applyPublicIPChanges(ctx, d, client, vmService); pipDiags != nil {
+			return pipDiags
 		}
-
-		if newVal != "" {
-			pipFQID := string(client.Networking().PublicIPRef(newVal))
-			if isFQID(newVal) {
-				pipFQID = newVal
-			}
-			updater = updater.SetPublicIP(pipFQID)
-		} else {
-			updater = updater.RemovePublicIP()
-		}
-		hasChanges = true
 	}
 
 	if d.HasChange("placement_group") {
@@ -507,12 +491,18 @@ func resourceVirtualMachineUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if hasChanges {
-		if _, err := updater.Apply(ctx); err != nil {
+		err := retry.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+			if _, err := updater.Apply(ctx); err != nil {
+				if errors.Is(err, evroc.ErrConflict) {
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
 			return diag.Errorf("error updating virtual machine %s: %s", d.Id(), err)
 		}
-		// Wait for the async update to settle before proceeding.
-		// The API processes changes asynchronously, so the object's resource
-		// version may still be changing when we try the next operation.
 		if needsStop {
 			if _, err := vmService.WaitForStopped(ctx, d.Id(), d.Timeout(schema.TimeoutUpdate)); err != nil {
 				return diag.Errorf("error waiting for virtual machine %s to settle after update: %s", d.Id(), err)
@@ -578,6 +568,92 @@ func applyUserLabelChanges(updater *compute.VirtualMachineUpdateBuilder, d *sche
 		updater = updater.AddLabel(k, v.(string))
 	}
 	return updater
+}
+
+// applyPublicIPChanges handles public IP add/remove as separate API calls.
+// When removing, it waits for the IP to be fully released before returning.
+// When adding, it retries until the IP is actually attached to the VM.
+func applyPublicIPChanges(ctx context.Context, d *schema.ResourceData, client *evroc.Client, vmService *compute.VirtualMachinesService) diag.Diagnostics {
+	oldPIP, newPIP := d.GetChange("public_ip")
+	oldVal := oldPIP.(string)
+	newVal := newPIP.(string)
+	timeout := d.Timeout(schema.TimeoutUpdate)
+
+	if oldVal != "" {
+		pipName := oldVal
+		if isFQID(pipName) {
+			pipName = path.Base(pipName)
+		}
+
+		// Apply() does GET-then-PATCH; retry on 409 if the VM's
+		// resourceVersion was bumped by a concurrent operation.
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			_, err := compute.UpdateVM(d.Id(), vmService).RemovePublicIP().Apply(ctx)
+			if err == nil {
+				return nil
+			}
+			if errors.Is(err, evroc.ErrConflict) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		})
+		if err != nil {
+			return diag.Errorf("error removing public IP from virtual machine %s: %s", d.Id(), err)
+		}
+
+		// The removal is async — wait until this VM no longer holds the IP
+		// so a concurrent SetPublicIP on another VM can claim it.
+		vmFQID := string(client.Compute().VMRef(d.Id()))
+		err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			pip, err := client.Networking().PublicIPs().Get(ctx, pipName)
+			if err != nil {
+				return retry.NonRetryableError(err)
+			}
+			if pip.Status.UsedByRef != nil && *pip.Status.UsedByRef == vmFQID {
+				return retry.RetryableError(fmt.Errorf("public IP %s still held by this VM", pipName))
+			}
+			return nil
+		})
+		if err != nil {
+			return diag.Errorf("error waiting for public IP to be released from virtual machine %s: %s", d.Id(), err)
+		}
+	}
+
+	if newVal != "" {
+		pipFQID := string(client.Networking().PublicIPRef(newVal))
+		if isFQID(newVal) {
+			pipFQID = newVal
+		}
+		// Retry until the IP is actually attached — the API may return 200
+		// without attaching if the IP is still claimed elsewhere.
+		err := retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+			_, err := compute.UpdateVM(d.Id(), vmService).SetPublicIP(pipFQID).Apply(ctx)
+			if err != nil {
+				// 409: stale resourceVersion; 403: IP still attached to another VM
+				if errors.Is(err, evroc.ErrConflict) || errors.Is(err, evroc.ErrForbidden) {
+					return retry.RetryableError(err)
+				}
+				return retry.NonRetryableError(err)
+			}
+			vm, err := vmService.Get(ctx, d.Id())
+			if err != nil {
+				return retry.NonRetryableError(err)
+			}
+			if vm.Spec.Networking == nil ||
+				vm.Spec.Networking.PublicIPv4Address == nil ||
+				vm.Spec.Networking.PublicIPv4Address.Static == nil ||
+				vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef == nil ||
+				*vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != pipFQID {
+				return retry.RetryableError(fmt.Errorf("public IP not yet attached to VM %s", d.Id()))
+			}
+			return nil
+		})
+		if err != nil {
+			return diag.Errorf("error setting public IP on virtual machine %s: %s", d.Id(), err)
+		}
+	}
+
+	return nil
 }
 
 // ensureVMRunningState handles Phase 3 (restarting after stop-required changes)

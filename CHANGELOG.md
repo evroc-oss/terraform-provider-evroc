@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-06-18
+
+### Fixed
+- VM updates retry on 409 Conflict caused by concurrent resource modifications (e.g. SG detach racing with VM update)
+- Public IP move between VMs works in a single apply (wait for release, verify attachment)
+- Public IP removal now works correctly (SDK v0.5.1 fix for omitempty serialization)
+
+### Dependencies
+- evroc Go SDK v0.5.1
+
 ## [0.5.2] - 2026-06-12
 
 ### Fixed
