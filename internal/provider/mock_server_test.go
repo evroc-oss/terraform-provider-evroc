@@ -599,7 +599,6 @@ func setupVirtualMachineHandlers(ms *mockServer, name string) {
 			ms.markDeleted(resourcePath)
 			w.WriteHeader(http.StatusNoContent)
 		case http.MethodPatch:
-			// Decode patch to track running state changes
 			var patch computetypes.VirtualMachine
 			if err := json.NewDecoder(r.Body).Decode(&patch); err == nil {
 				if patch.Spec.Running != nil {
@@ -608,6 +607,19 @@ func setupVirtualMachineHandlers(ms *mockServer, name string) {
 						vm.Status.VirtualMachineStatus = stringPtr("Running")
 					} else {
 						vm.Status.VirtualMachineStatus = stringPtr("Stopped")
+					}
+				}
+				// Track public IP changes in spec and status
+				if patch.Spec.Networking != nil && patch.Spec.Networking.PublicIPv4Address != nil {
+					if patch.Spec.Networking.PublicIPv4Address.Static != nil &&
+						patch.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != nil &&
+						*patch.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != "" {
+						vm.Spec.Networking.PublicIPv4Address = patch.Spec.Networking.PublicIPv4Address
+						ip := "203.0.113.99"
+						vm.Status.Networking.PublicIPv4Address = &ip
+					} else {
+						vm.Spec.Networking.PublicIPv4Address = nil
+						vm.Status.Networking.PublicIPv4Address = nil
 					}
 				}
 			}

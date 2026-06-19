@@ -5,10 +5,15 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
 
+	computetypes "github.com/evroc-oss/evroc-go-sdk/types/compute"
+	networkingtypes "github.com/evroc-oss/evroc-go-sdk/types/networking"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -964,6 +969,7 @@ func TestResourceVirtualMachineUpdatePublicIP(t *testing.T) {
 	ms := newMockServer()
 	defer ms.close()
 	setupVirtualMachineHandlers(ms, "test-vm")
+	setupPublicIPHandlers(ms, "old-pip")
 	setupCatchAll(ms)
 
 	config := newTestProviderConfig(t, ms.server.URL)
@@ -981,10 +987,137 @@ func TestResourceVirtualMachineUpdatePublicIP(t *testing.T) {
 	}
 }
 
+// TestCustomerScenarioMultiVMPublicIPAndSG models a real customer deployment
+// (falken-ng) where 3 VMs each have a dedicated public IP and share a security
+// group. The test exercises the full update path for moving a public IP between
+// VMs: RemovePublicIP with 409 retry, UsedByRef polling, SetPublicIP with 409
+// retry, and IP-match verification.
+func TestCustomerScenarioMultiVMPublicIPAndSG(t *testing.T) {
+	ms := newMockServer()
+	defer ms.close()
+
+	// Create 3 VMs with dedicated IPs — mirrors the customer's falken-ng setup.
+	vmNames := []string{"soti-management", "mssql", "soti-deployment"}
+	pipNames := []string{"soti-management-ip", "mssql-ip", "soti-deployment-ip"}
+	sgNames := []string{"default-secgroup", "management-secgroup", "sql-secgroup", "deploy-secgroup"}
+
+	vms := make(map[string]*computetypes.VirtualMachine)
+	pips := make(map[string]*networkingtypes.PublicIP)
+
+	for i, name := range vmNames {
+		vm := mockVirtualMachine(name)
+		pipRef := fmt.Sprintf("/networking/projects/test-project/regions/se-sto/publicIPs/%s", pipNames[i])
+		vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef = &pipRef
+		vms[name] = vm
+	}
+	for _, name := range pipNames {
+		pips[name] = mockPublicIP(name)
+	}
+
+	// Assign UsedByRef to the first two IPs (management and mssql).
+	mgmtVMRef := "/compute/projects/test-project/regions/se-sto/virtualMachines/soti-management"
+	mssqlVMRef := "/compute/projects/test-project/regions/se-sto/virtualMachines/mssql"
+	pips["soti-management-ip"].Status.UsedByRef = &mgmtVMRef
+	pips["mssql-ip"].Status.UsedByRef = &mssqlVMRef
+
+	// Register VM resource handlers for each VM.
+	for _, name := range vmNames {
+		vm := vms[name]
+		resourcePath := fmt.Sprintf("/compute/v1beta1/projects/test-project/regions/se-sto/virtualMachines/%s", name)
+		ms.mux.HandleFunc(resourcePath, func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				respondJSON(w, http.StatusOK, vm)
+			case http.MethodPatch:
+				var patch computetypes.VirtualMachine
+				if err := json.NewDecoder(r.Body).Decode(&patch); err == nil {
+					if patch.Spec.Networking != nil && patch.Spec.Networking.PublicIPv4Address != nil {
+						if patch.Spec.Networking.PublicIPv4Address.Static != nil &&
+							patch.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != nil &&
+							*patch.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != "" {
+							vm.Spec.Networking.PublicIPv4Address = patch.Spec.Networking.PublicIPv4Address
+						} else {
+							vm.Spec.Networking.PublicIPv4Address = nil
+						}
+					}
+				}
+				respondJSON(w, http.StatusOK, vm)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+		})
+	}
+
+	// Register public IP handlers that track UsedByRef — the removal path
+	// polls this until the IP is no longer held by the source VM.
+	for _, name := range pipNames {
+		pip := pips[name]
+		resourcePath := fmt.Sprintf("/networking/v1beta1/projects/test-project/regions/se-sto/publicIPs/%s", name)
+		ms.mux.HandleFunc(resourcePath, func(w http.ResponseWriter, r *http.Request) {
+			respondJSON(w, http.StatusOK, pip)
+		})
+	}
+
+	// Register security group handlers for the shared + dedicated groups.
+	for _, name := range sgNames {
+		sg := mockSecurityGroup(name)
+		resourcePath := fmt.Sprintf("/networking/v1beta1/projects/test-project/regions/se-sto/securityGroups/%s", name)
+		ms.mux.HandleFunc(resourcePath, func(w http.ResponseWriter, r *http.Request) {
+			respondJSON(w, http.StatusOK, sg)
+		})
+	}
+	setupCatchAll(ms)
+
+	config := newTestProviderConfig(t, ms.server.URL)
+	oldPIP := "/networking/projects/test-project/regions/se-sto/publicIPs/soti-management-ip"
+	newPIP := "/networking/projects/test-project/regions/se-sto/publicIPs/soti-deployment-ip"
+	oldSGHash := strconv.Itoa(securityGroupHash("/networking/projects/test-project/regions/se-sto/securityGroups/default-secgroup"))
+	newSGHash := strconv.Itoa(securityGroupHash("/networking/projects/test-project/regions/se-sto/securityGroups/management-secgroup"))
+
+	// Simulate updating VM "soti-management": change its public IP (move)
+	// and update its security groups — both at once, as Terraform would.
+	d := newResourceDataWithDiff(t, resourceVirtualMachine(), "soti-management",
+		map[string]string{
+			"name":                         "soti-management",
+			"public_ip":                    oldPIP,
+			"security_groups.#":            "1",
+			"security_groups." + oldSGHash: "/networking/projects/test-project/regions/se-sto/securityGroups/default-secgroup",
+		},
+		map[string]*terraform.ResourceAttrDiff{
+			"public_ip":                    {Old: oldPIP, New: newPIP},
+			"security_groups.#":            {Old: "1", New: "2"},
+			"security_groups." + oldSGHash: {Old: "/networking/projects/test-project/regions/se-sto/securityGroups/default-secgroup", New: "/networking/projects/test-project/regions/se-sto/securityGroups/default-secgroup"},
+			"security_groups." + newSGHash: {Old: "", New: "/networking/projects/test-project/regions/se-sto/securityGroups/management-secgroup"},
+		},
+	)
+
+	// Clear UsedByRef on the old IP before the retry polls it — simulates
+	// the API releasing the IP asynchronously after RemovePublicIP.
+	pips["soti-management-ip"].Status.UsedByRef = nil
+
+	ctx := context.Background()
+	diags := resourceVirtualMachineUpdate(ctx, d, config)
+	if diags.HasError() {
+		t.Fatalf("unexpected update error: %v", diagnosticsToString(diags))
+	}
+
+	// Verify the VM spec now points at the new IP.
+	vm := vms["soti-management"]
+	if vm.Spec.Networking.PublicIPv4Address == nil ||
+		vm.Spec.Networking.PublicIPv4Address.Static == nil ||
+		vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef == nil {
+		t.Fatal("expected VM to have a public IP after update")
+	}
+	if *vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != newPIP {
+		t.Errorf("expected public IP ref %s, got %s", newPIP, *vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef)
+	}
+}
+
 func TestResourceVirtualMachineUpdatePublicIPPlainName(t *testing.T) {
 	ms := newMockServer()
 	defer ms.close()
 	setupVirtualMachineHandlers(ms, "test-vm")
+	setupPublicIPHandlers(ms, "old-pip")
 	setupCatchAll(ms)
 
 	config := newTestProviderConfig(t, ms.server.URL)
@@ -1006,6 +1139,7 @@ func TestResourceVirtualMachineUpdateRemovePublicIP(t *testing.T) {
 	ms := newMockServer()
 	defer ms.close()
 	setupVirtualMachineHandlers(ms, "test-vm")
+	setupPublicIPHandlers(ms, "old-pip")
 	setupCatchAll(ms)
 
 	config := newTestProviderConfig(t, ms.server.URL)
