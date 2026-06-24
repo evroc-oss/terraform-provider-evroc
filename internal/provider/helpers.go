@@ -11,11 +11,13 @@ import (
 	evroc "github.com/evroc-oss/evroc-go-sdk"
 	"github.com/evroc-oss/evroc-go-sdk/compute"
 	"github.com/evroc-oss/evroc-go-sdk/iam"
+	"github.com/evroc-oss/evroc-go-sdk/loadbalancer"
 	"github.com/evroc-oss/evroc-go-sdk/networking"
 	"github.com/evroc-oss/evroc-go-sdk/storage"
 	"github.com/evroc-oss/evroc-go-sdk/think"
 	computetypes "github.com/evroc-oss/evroc-go-sdk/types/compute"
 	iamtypes "github.com/evroc-oss/evroc-go-sdk/types/iam"
+	lbtypes "github.com/evroc-oss/evroc-go-sdk/types/loadbalancer"
 	networkingtypes "github.com/evroc-oss/evroc-go-sdk/types/networking"
 	storagetypes "github.com/evroc-oss/evroc-go-sdk/types/storage"
 	thinktypes "github.com/evroc-oss/evroc-go-sdk/types/think"
@@ -352,4 +354,63 @@ func BuildProjectCreateRequest(name, organization, displayName string, userLabel
 	}
 
 	return builder.Build()
+}
+
+// BuildBackendPoolCreateRequest creates a properly formatted BackendPool request using SDK builder
+func BuildBackendPoolCreateRequest(name string, backendRefs []string, userLabels map[string]string) *lbtypes.BackendpoolRequest {
+	builder := loadbalancer.NewBackendPoolBuilder(name)
+
+	if len(backendRefs) > 0 {
+		builder = builder.WithBackendRefs(backendRefs)
+	}
+
+	req := builder.Build()
+
+	if len(userLabels) > 0 {
+		labels := make(lbtypes.UserLabels)
+		for k, v := range userLabels {
+			labels[k] = v
+		}
+		req.Metadata.UserLabels = &labels
+	}
+
+	return req
+}
+
+// BuildBackendServiceCreateRequest creates a properly formatted BackendService request using SDK builder
+func BuildBackendServiceCreateRequest(name string, port int32, backendPoolRef string, proxyProtocol bool, userLabels map[string]string) *lbtypes.BackendserviceRequest {
+	builder := loadbalancer.NewBackendServiceBuilder(name).
+		WithPort(port).
+		WithBackendPoolRef(backendPoolRef).
+		WithProxyProtocol(proxyProtocol)
+
+	req := builder.Build()
+
+	if len(userLabels) > 0 {
+		labels := make(lbtypes.UserLabels)
+		for k, v := range userLabels {
+			labels[k] = v
+		}
+		req.Metadata.UserLabels = &labels
+	}
+
+	return req
+}
+
+// BuildL4RouteCreateRequest creates a properly formatted L4Route request using SDK builder
+func BuildL4RouteCreateRequest(name string, backendServiceRef string, userLabels map[string]string) *lbtypes.L4routeRequest {
+	builder := loadbalancer.NewL4RouteBuilder(name).
+		WithBackendServiceRef(backendServiceRef)
+
+	req := builder.Build()
+
+	if len(userLabels) > 0 {
+		labels := make(lbtypes.UserLabels)
+		for k, v := range userLabels {
+			labels[k] = v
+		}
+		req.Metadata.UserLabels = &labels
+	}
+
+	return req
 }

@@ -27,6 +27,8 @@ github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/evroc-oss/evroc-go-sdk v0.5.1 h1:vPl3ge4G9EcpA+FomrmqmIlGPHQjFC4Z5u0PzJFGRTg=
 github.com/evroc-oss/evroc-go-sdk v0.5.1/go.mod h1:A83ERSPur4/6o1MVToXWEP8S6JUim01+jadn4MMuXJc=
+github.com/evroc-oss/evroc-go-sdk v0.6.0-rc2 h1:JX0CHQ2/Ir/zY438hQiJ2wAtiHI8nluQaBVBhN4eCf0=
+github.com/evroc-oss/evroc-go-sdk v0.6.0-rc2/go.mod h1:OtJTCebJFQfOd8qMX6/C5rtadtUSHEWsvINssS2QfSc=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.18.0 h1:S8gINlzdQ840/4pfAwic/ZE0djQEH3wM94VfqLTZcOM=
 github.com/fatih/color v1.18.0/go.mod h1:4FelSpRwEGDpQ12mAdzqdOukCy4u8WUtOY6lkT/6HfU=

@@ -96,6 +96,10 @@ func New(version string) func() *schema.Provider {
 				"evroc_think_instance":          resourceThinkInstance(),
 				"evroc_think_api_key":           resourceThinkAPIKey(),
 				"evroc_permission_set":          resourcePermissionSet(),
+				"evroc_loadbalancer":            resourceLoadBalancer(),
+				"evroc_lb_backend_pool":         resourceLBBackendPool(),
+				"evroc_lb_backend_service":      resourceLBBackendService(),
+				"evroc_lb_l4_route":             resourceLBL4Route(),
 			},
 
 			DataSourcesMap: map[string]*schema.Resource{
@@ -115,6 +119,10 @@ func New(version string) func() *schema.Provider {
 				"evroc_think_models":            dataSourceThinkModels(),
 				"evroc_think_sizes":             dataSourceThinkSizes(),
 				"evroc_permission_set":          dataSourcePermissionSet(),
+				"evroc_loadbalancer":            dataSourceLoadBalancer(),
+				"evroc_lb_backend_pool":         dataSourceLBBackendPool(),
+				"evroc_lb_backend_service":      dataSourceLBBackendService(),
+				"evroc_lb_l4_route":             dataSourceLBL4Route(),
 			},
 		}
 
