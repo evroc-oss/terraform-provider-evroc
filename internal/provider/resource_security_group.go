@@ -109,6 +109,14 @@ func resourceSecurityGroup() *schema.Resource {
 				Computed:    true,
 				Description: "Region where the security group is created. Defaults to provider region.",
 			},
+			"vpc_ref": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: suppressFQIDDiff,
+				Description:      "Reference to the VPC this security group belongs to. Accepts FQID or plain name. Defaults to the project's default VPC.",
+			},
 			"rule": {
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -174,6 +182,14 @@ func resourceSecurityGroupCreate(ctx context.Context, d *schema.ResourceData, me
 
 	req := BuildSecurityGroupCreateRequest(name, rules, userLabels)
 
+	if vpcRef, ok := d.GetOk("vpc_ref"); ok {
+		ref := vpcRef.(string)
+		if !isFQID(ref) {
+			ref = client.Networking().VPCRef(ref)
+		}
+		req.Spec.VpcRef = ref
+	}
+
 	sg, err := client.Networking().SecurityGroups().Create(ctx, req)
 	if err != nil {
 		return diag.Errorf("error creating security group %s: %s", name, err)
@@ -218,6 +234,10 @@ func resourceSecurityGroupRead(ctx context.Context, d *schema.ResourceData, meta
 	diags = setDiag(d, "region", derefString(sg.Metadata.Region), diags)
 	diags = setDiag(d, "sg_id", sg.Metadata.Uid.String(), diags)
 	diags = setDiag(d, "created_at", sg.Metadata.CreationTimestamp.Format(time.RFC3339), diags)
+
+	if sg.Spec.VpcRef != "" {
+		diags = setDiag(d, "vpc_ref", sg.Spec.VpcRef, diags)
+	}
 
 	// Set rules
 	if sg.Spec.Rules != nil {

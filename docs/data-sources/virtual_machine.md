@@ -27,9 +27,9 @@ Get information about an existing evroc virtual machine.
 ### Read-Only
 
 - `boot_disk` (String) Name of the boot disk.
-- `data_disks` (List of String) List of FQIDs of additional data disks attached to the VM.
 - `cloud_config_user_data` (String) Cloud-init user data script.
 - `created_at` (String) Timestamp when the VM was created (RFC3339 format).
+- `data_disks` (List of String) List of FQIDs of additional data disks attached to the VM.
 - `flavor` (String) VM flavor/size.
 - `fqid` (String) Fully qualified resource ID (FQID).
 - `id` (String) The ID of this resource.

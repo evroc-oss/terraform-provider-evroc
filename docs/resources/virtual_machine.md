@@ -31,8 +31,10 @@ Provides an evroc virtual machine resource. A boot disk is required at creation 
 - `public_ip` (String) Name of the public IP to attach to the VM. Accepts FQID or plain name.
 - `region` (String) Region where the VM is created. Defaults to provider region.
 - `running` (Boolean) Whether the VM should be running. Set to false to stop the VM.
-- `security_groups` (List of String) List of security group names to attach to the VM. Accepts FQIDs or plain names.
+- `security_groups` (Set of String) Set of security group names to attach to the VM. Accepts FQIDs or plain names.
 - `ssh_keys` (List of String) List of SSH public keys to inject into the VM.
+- `stack_type` (String) Network stack type: 'dual-stack' (IPv4 + IPv6), 'ipv6-only', or 'ipv4-only'. Defaults to the subnet's stack type.
+- `subnet_ref` (String) Subnet for the VM. Defaults to the zone's default subnet. Accepts FQID or plain name.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 
@@ -41,6 +43,7 @@ Provides an evroc virtual machine resource. A boot disk is required at creation 
 - `created_at` (String) Timestamp when the VM was created (RFC3339 format).
 - `fqid` (String) Fully qualified resource ID (FQID). Use this to reference this resource from other resources.
 - `id` (String) The ID of this resource.
+- `ipv6_address` (String) Assigned IPv6 GUA address of the VM (when stack_type is dual-stack or ipv6-only).
 - `private_ipv4_address` (String) Assigned private IPv4 address of the VM.
 - `public_ipv4_address` (String) Assigned public IPv4 address of the VM.
 - `status` (String) Current status of the virtual machine (e.g., Running, Stopped, Creating).

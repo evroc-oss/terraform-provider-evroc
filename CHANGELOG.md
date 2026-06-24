@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-23
+
+### Breaking Changes
+- **`evroc_security_group`**: Now requires `vpc_ref` (the VPC the security group belongs to). For existing configs using the default VPC, add `vpc_ref = "default-se-sto"`.
+- **`evroc_virtual_machine`**: Now requires `subnet_ref` (the subnet the VM is attached to). For existing configs using the default subnet, add `subnet_ref = "default-se-sto-<zone>"` (e.g. `default-se-sto-a`).
+- All compute and networking APIs migrated from v1beta1 to v1beta2. Existing state files will need `terraform state replace-provider` if upgrading from 0.5.x.
+
+### Added
+- `evroc_loadbalancer` resource and data source with listeners and route references
+- `evroc_lb_backend_pool` resource and data source with VM backend references
+- `evroc_lb_backend_service` resource and data source with health checks (TCP/HTTP/HTTPS)
+- `evroc_lb_l4_route` resource and data source for L4 traffic routing
+- `evroc_vpc` resource and data source with RFC 1918 CIDR validation, status fields (assigned CIDRs, subnets)
+- `evroc_subnet` resource and data source with cross-field validation and IPv4/IPv6 usage stats
+- `evroc_snapshot` resource and data source for disk snapshots
+- `subnet_ref` field on `evroc_virtual_machine`
+- `vpc_ref` field on `evroc_security_group`
+- `snapshot` field on `evroc_disk` (mutually exclusive with `image`)
+- `health_check` block on `evroc_lb_backend_service` (TCP, HTTP, HTTPS)
+- Validators: `validateVPCCIDR` (RFC 1918), `validateSubnetCIDR` (/16-/29), `validateVPCStackType`
+- `WaitForDeleted` on VPC and subnet delete
+
+### Dependencies
+- evroc Go SDK v0.6.0
+
 ## [0.5.3] - 2026-06-18
 
 ### Fixed

@@ -1,0 +1,4 @@
+ssh_public_key      = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@example.com"
+k3s_token           = "my-secure-random-token-here"
+control_plane_count = 3
+worker_count        = 3

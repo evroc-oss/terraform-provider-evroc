@@ -26,6 +26,7 @@ Provides an evroc security group resource for network firewall rules.
 - `rule` (Block Set) List of security group rules. (see [below for nested schema](#nestedblock--rule))
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
+- `vpc_ref` (String) Reference to the VPC this security group belongs to. Accepts FQID or plain name. Defaults to the project's default VPC.
 
 ### Read-Only
 

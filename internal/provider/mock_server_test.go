@@ -117,7 +117,7 @@ func mockDisk(name string) *computetypes.Disk {
 			Uid:               uid,
 		},
 		Spec: computetypes.DiskSpec{
-			DiskImageRef: &imgRef,
+			Source: &computetypes.DiskSpecSource{DiskImageRef: &imgRef},
 			DiskSize: &computetypes.DiskSpecDiskSize{
 				Amount: 100,
 				Unit:   computetypes.DiskSpecDiskSizeUnitGB,
@@ -134,8 +134,8 @@ func mockDisk(name string) *computetypes.Disk {
 
 func setupDiskHandlers(ms *mockServer, name string) {
 	disk := mockDisk(name)
-	resourcePath := fmt.Sprintf("/compute/v1beta1/projects/test-project/regions/se-sto/disks/%s", name)
-	ms.mux.HandleFunc("/compute/v1beta1/projects/test-project/regions/se-sto/disks", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/compute/v1beta2/projects/test-project/regions/se-sto/disks/%s", name)
+	ms.mux.HandleFunc("/compute/v1beta2/projects/test-project/regions/se-sto/disks", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, disk)
 			return
@@ -189,8 +189,8 @@ func mockPublicIP(name string) *networkingtypes.PublicIP {
 
 func setupPublicIPHandlers(ms *mockServer, name string) {
 	pip := mockPublicIP(name)
-	resourcePath := fmt.Sprintf("/networking/v1beta1/projects/test-project/regions/se-sto/publicIPs/%s", name)
-	ms.mux.HandleFunc("/networking/v1beta1/projects/test-project/regions/se-sto/publicIPs", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/networking/v1beta2/projects/test-project/regions/se-sto/publicIPs/%s", name)
+	ms.mux.HandleFunc("/networking/v1beta2/projects/test-project/regions/se-sto/publicIPs", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, pip)
 			return
@@ -242,8 +242,8 @@ func mockSecurityGroup(name string) *networkingtypes.SecurityGroup {
 
 func setupSecurityGroupHandlers(ms *mockServer, name string) {
 	sg := mockSecurityGroup(name)
-	resourcePath := fmt.Sprintf("/networking/v1beta1/projects/test-project/regions/se-sto/securityGroups/%s", name)
-	ms.mux.HandleFunc("/networking/v1beta1/projects/test-project/regions/se-sto/securityGroups", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/networking/v1beta2/projects/test-project/regions/se-sto/securityGroups/%s", name)
+	ms.mux.HandleFunc("/networking/v1beta2/projects/test-project/regions/se-sto/securityGroups", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, sg)
 			return
@@ -304,8 +304,8 @@ func mockPlacementGroup(name string) *computetypes.PlacementGroup {
 
 func setupPlacementGroupHandlers(ms *mockServer, name string) {
 	pg := mockPlacementGroup(name)
-	resourcePath := fmt.Sprintf("/compute/v1beta1/projects/test-project/regions/se-sto/placementGroups/%s", name)
-	ms.mux.HandleFunc("/compute/v1beta1/projects/test-project/regions/se-sto/placementGroups", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/compute/v1beta2/projects/test-project/regions/se-sto/placementGroups/%s", name)
+	ms.mux.HandleFunc("/compute/v1beta2/projects/test-project/regions/se-sto/placementGroups", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, pg)
 			return
@@ -547,7 +547,7 @@ func mockVirtualMachine(name string) *computetypes.VirtualMachine {
 					},
 				},
 			},
-			Networking: &computetypes.VirtualMachineSpecNetworking{
+			Networking: computetypes.VirtualMachineSpecNetworking{
 				PublicIPv4Address: &struct {
 					Static *computetypes.VirtualMachineSpecNetworkingStatic `json:"static,omitempty"`
 				}{
@@ -579,8 +579,8 @@ func mockVirtualMachine(name string) *computetypes.VirtualMachine {
 
 func setupVirtualMachineHandlers(ms *mockServer, name string) {
 	vm := mockVirtualMachine(name)
-	resourcePath := fmt.Sprintf("/compute/v1beta1/projects/test-project/regions/se-sto/virtualMachines/%s", name)
-	ms.mux.HandleFunc("/compute/v1beta1/projects/test-project/regions/se-sto/virtualMachines", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/compute/v1beta2/projects/test-project/regions/se-sto/virtualMachines/%s", name)
+	ms.mux.HandleFunc("/compute/v1beta2/projects/test-project/regions/se-sto/virtualMachines", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, vm)
 			return
@@ -610,7 +610,7 @@ func setupVirtualMachineHandlers(ms *mockServer, name string) {
 					}
 				}
 				// Track public IP changes in spec and status
-				if patch.Spec.Networking != nil && patch.Spec.Networking.PublicIPv4Address != nil {
+				if patch.Spec.Networking.PublicIPv4Address != nil {
 					if patch.Spec.Networking.PublicIPv4Address.Static != nil &&
 						patch.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != nil &&
 						*patch.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != "" {
@@ -662,8 +662,8 @@ func mockDiskAttachment(name string) *computetypes.HotswapDiskAttachment {
 
 func setupDiskAttachmentHandlers(ms *mockServer, name string) {
 	attachment := mockDiskAttachment(name)
-	resourcePath := fmt.Sprintf("/compute/v1beta1/projects/test-project/regions/se-sto/hotswapDiskAttachments/%s", name)
-	ms.mux.HandleFunc("/compute/v1beta1/projects/test-project/regions/se-sto/hotswapDiskAttachments", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/compute/v1beta2/projects/test-project/regions/se-sto/hotswapDiskAttachments/%s", name)
+	ms.mux.HandleFunc("/compute/v1beta2/projects/test-project/regions/se-sto/hotswapDiskAttachments", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, attachment)
 			return

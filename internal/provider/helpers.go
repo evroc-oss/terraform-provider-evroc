@@ -1,5 +1,5 @@
-// Copyright 2026 evroc
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 evroc
 
 package provider
 
@@ -11,11 +11,13 @@ import (
 	evroc "github.com/evroc-oss/evroc-go-sdk"
 	"github.com/evroc-oss/evroc-go-sdk/compute"
 	"github.com/evroc-oss/evroc-go-sdk/iam"
+	"github.com/evroc-oss/evroc-go-sdk/loadbalancer"
 	"github.com/evroc-oss/evroc-go-sdk/networking"
 	"github.com/evroc-oss/evroc-go-sdk/storage"
 	"github.com/evroc-oss/evroc-go-sdk/think"
 	computetypes "github.com/evroc-oss/evroc-go-sdk/types/compute"
 	iamtypes "github.com/evroc-oss/evroc-go-sdk/types/iam"
+	lbtypes "github.com/evroc-oss/evroc-go-sdk/types/loadbalancer"
 	networkingtypes "github.com/evroc-oss/evroc-go-sdk/types/networking"
 	storagetypes "github.com/evroc-oss/evroc-go-sdk/types/storage"
 	thinktypes "github.com/evroc-oss/evroc-go-sdk/types/think"
@@ -23,12 +25,16 @@ import (
 )
 
 // BuildDiskCreateRequest creates a properly formatted Disk request using SDK builder
-func BuildDiskCreateRequest(name string, sizeGB int, image, zone string, userLabels map[string]string) *computetypes.DiskRequest {
+func BuildDiskCreateRequest(name string, sizeGB int, image, snapshot, zone string, userLabels map[string]string) *computetypes.DiskRequest {
 	builder := compute.NewDiskBuilder(name).
 		WithSizeGB(int32(sizeGB))
 
 	if image != "" {
 		builder = builder.WithImage(image)
+	}
+
+	if snapshot != "" {
+		builder = builder.WithSnapshot(snapshot)
 	}
 
 	if zone != "" {
@@ -68,7 +74,7 @@ func BuildPublicIPCreateRequest(name string, userLabels map[string]string) *netw
 // BuildVirtualMachineCreateRequest creates a properly formatted VirtualMachine request using SDK builder.
 // Reference fields (bootDisk, dataDisks, publicIP, securityGroups, placementGroup) accept either plain names
 // or fully-qualified IDs (FQIDs). Plain names are resolved using the client's default project/region.
-func BuildVirtualMachineCreateRequest(client *evroc.Client, name, flavor, bootDisk string, dataDisks []string, sshKeys []string, userData, publicIP, zone string, securityGroups []string, placementGroup string, running bool, userLabels map[string]string) *computetypes.VirtualMachineRequest {
+func BuildVirtualMachineCreateRequest(client *evroc.Client, name, flavor, bootDisk string, dataDisks []string, sshKeys []string, userData, publicIP, zone string, securityGroups []string, placementGroup, subnetRef, stackType string, running bool, userLabels map[string]string) *computetypes.VirtualMachineRequest {
 	// Resolve boot disk ref: FQID pass-through or name → FQID
 	diskRef := client.Compute().DiskRef(bootDisk)
 	if isFQID(bootDisk) {
@@ -122,6 +128,14 @@ func BuildVirtualMachineCreateRequest(client *evroc.Client, name, flavor, bootDi
 			pgRef = computetypes.PlacementGroupRef(placementGroup)
 		}
 		builder = builder.WithPlacementGroup(pgRef)
+	}
+
+	if subnetRef != "" {
+		builder = builder.WithSubnet(subnetRef)
+	}
+
+	if stackType != "" {
+		builder = builder.WithStackType(computetypes.VirtualMachineSpecNetworkingStackType(stackType))
 	}
 
 	req := builder.Build()
@@ -352,4 +366,63 @@ func BuildProjectCreateRequest(name, organization, displayName string, userLabel
 	}
 
 	return builder.Build()
+}
+
+// BuildBackendPoolCreateRequest creates a properly formatted BackendPool request using SDK builder
+func BuildBackendPoolCreateRequest(name string, backendRefs []string, userLabels map[string]string) *lbtypes.BackendpoolRequest {
+	builder := loadbalancer.NewBackendPoolBuilder(name)
+
+	if len(backendRefs) > 0 {
+		builder = builder.WithBackendRefs(backendRefs)
+	}
+
+	req := builder.Build()
+
+	if len(userLabels) > 0 {
+		labels := make(lbtypes.UserLabels)
+		for k, v := range userLabels {
+			labels[k] = v
+		}
+		req.Metadata.UserLabels = &labels
+	}
+
+	return req
+}
+
+// BuildBackendServiceCreateRequest creates a properly formatted BackendService request using SDK builder
+func BuildBackendServiceCreateRequest(name string, port int32, backendPoolRef string, proxyProtocol bool, userLabels map[string]string) *lbtypes.BackendserviceRequest {
+	builder := loadbalancer.NewBackendServiceBuilder(name).
+		WithPort(port).
+		WithBackendPoolRef(backendPoolRef).
+		WithProxyProtocol(proxyProtocol)
+
+	req := builder.Build()
+
+	if len(userLabels) > 0 {
+		labels := make(lbtypes.UserLabels)
+		for k, v := range userLabels {
+			labels[k] = v
+		}
+		req.Metadata.UserLabels = &labels
+	}
+
+	return req
+}
+
+// BuildL4RouteCreateRequest creates a properly formatted L4Route request using SDK builder
+func BuildL4RouteCreateRequest(name string, backendServiceRef string, userLabels map[string]string) *lbtypes.L4routeRequest {
+	builder := loadbalancer.NewL4RouteBuilder(name).
+		WithBackendServiceRef(backendServiceRef)
+
+	req := builder.Build()
+
+	if len(userLabels) > 0 {
+		labels := make(lbtypes.UserLabels)
+		for k, v := range userLabels {
+			labels[k] = v
+		}
+		req.Metadata.UserLabels = &labels
+	}
+
+	return req
 }
