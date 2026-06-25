@@ -1,0 +1,36 @@
+## template: jinja
+#cloud-config
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 evroc
+hostname: ${hostname}
+
+ssh_pwauth: false
+manage_etc_hosts: localhost
+users:
+  - name: evroc-user
+    gecos: evroc VM user
+    lock_passwd: true
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups:
+      - sudo
+    shell: /bin/bash
+{% if public_ssh_keys %}
+    ssh_authorized_keys:
+{% for pubkey in public_ssh_keys %}
+      - {{ pubkey }}
+{% endfor %}
+{% endif %}
+
+package_update: true
+
+packages:
+  - curl
+
+runcmd:
+  # Workers register against the first control plane directly (k3s_server_url).
+  # The k3s agent then learns every apiserver endpoint and load-balances across
+  # them client-side, so losing the founder later does not strand the worker.
+  - sleep 30
+  - curl -sfL https://get.k3s.io | K3S_TOKEN="${k3s_token}" K3S_URL="${k3s_server_url}" sh -s - agent
+
+final_message: "k3s worker ${hostname} ready after $UPTIME seconds"

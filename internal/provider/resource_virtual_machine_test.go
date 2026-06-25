@@ -132,6 +132,71 @@ resource "evroc_virtual_machine" "test" {
 `, diskName, vmName)
 }
 
+func TestAccEvrocVirtualMachine_DualStackSubnet(t *testing.T) {
+	resourceName := "evroc_virtual_machine.test"
+	ts := time.Now().Unix()
+	vmName := fmt.Sprintf("tf-test-vm-%d", ts)
+	diskName := fmt.Sprintf("tf-test-disk-%d", ts)
+	vpcName := fmt.Sprintf("tf-test-vpc-%d", ts)
+	subnetName := fmt.Sprintf("tf-test-subnet-%d", ts)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactories,
+		CheckDestroy:      testAccCheckEvrocVirtualMachineDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEvrocVirtualMachineConfig_dualStackSubnet(vmName, diskName, vpcName, subnetName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEvrocVirtualMachineExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", vmName),
+					resource.TestCheckResourceAttr(resourceName, "flavor", "a1a.s"),
+					resource.TestCheckResourceAttrSet(resourceName, "vm_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "subnet_ref"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func testAccEvrocVirtualMachineConfig_dualStackSubnet(vmName, diskName, vpcName, subnetName string) string {
+	return fmt.Sprintf(`
+resource "evroc_vpc" "test" {
+  name             = "%[3]s"
+  stack_type       = "dual-stack"
+  ipv4_cidr_blocks = ["10.0.0.0/16"]
+}
+
+resource "evroc_subnet" "test" {
+  name            = "%[4]s"
+  vpc_ref         = evroc_vpc.test.fqid
+  ipv4_cidr_block = "10.0.1.0/24"
+  stack_type      = "dual-stack"
+  zone            = "a"
+}
+
+resource "evroc_disk" "test" {
+  name  = "%[2]s"
+  size  = 100
+  image = "ubuntu-minimal.24-04.1"
+  zone  = "a"
+}
+
+resource "evroc_virtual_machine" "test" {
+  name       = "%[1]s"
+  flavor     = "a1a.s"
+  boot_disk  = evroc_disk.test.name
+  subnet_ref = evroc_subnet.test.fqid
+  zone       = "a"
+}
+`, vmName, diskName, vpcName, subnetName)
+}
+
 func testAccEvrocVirtualMachineConfig_withDataDisks(vmName, bootDiskName, dataDiskName string) string {
 	return fmt.Sprintf(`
 resource "evroc_disk" "boot" {

@@ -55,10 +55,19 @@ func resourceDisk() *schema.Resource {
 				Description:      "Size of the disk in GB (changes force recreation).",
 			},
 			"image": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-				Description: "OS image for the disk (e.g., ubuntu-24.04, rocky-9-6). Cannot be changed after creation.",
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"snapshot"},
+				Description:   "OS image for the disk (e.g., ubuntu-24.04, rocky-9-6). Mutually exclusive with snapshot.",
+			},
+			"snapshot": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				ConflictsWith:    []string{"image"},
+				DiffSuppressFunc: suppressFQIDDiff,
+				Description:      "Snapshot to create the disk from. Accepts FQID or plain name. Mutually exclusive with image.",
 			},
 			"region": {
 				Type:        schema.TypeString,
@@ -123,6 +132,16 @@ func resourceDiskCreate(ctx context.Context, d *schema.ResourceData, meta interf
 	image := d.Get("image").(string)
 	zone := d.Get("zone").(string)
 
+	var snapshot string
+	if s, ok := d.GetOk("snapshot"); ok {
+		snapshot = s.(string)
+		if isFQID(snapshot) {
+			// pass through
+		} else {
+			snapshot = string(client.Compute().SnapshotRef(snapshot))
+		}
+	}
+
 	// Get user labels
 	var userLabels map[string]string
 	if labels, ok := d.GetOk("user_labels"); ok {
@@ -132,8 +151,7 @@ func resourceDiskCreate(ctx context.Context, d *schema.ResourceData, meta interf
 		}
 	}
 
-	// Build disk create request using SDK builder
-	req := BuildDiskCreateRequest(name, size, image, zone, userLabels)
+	req := BuildDiskCreateRequest(name, size, image, snapshot, zone, userLabels)
 
 	disk, err := client.Compute().Disks().Create(ctx, req)
 	if err != nil {
@@ -188,10 +206,14 @@ func resourceDiskRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	// Set image if present (DiskImageRef is a string reference path)
 	// API returns full path like "/compute/global/diskImages/evroc/ubuntu-minimal.24-04.1"
 	// Extract just the image name (last part of path)
-	if disk.Spec.DiskImageRef != nil {
-		imagePath := derefString(disk.Spec.DiskImageRef)
-		imageName := path.Base(imagePath)
-		diags = setDiag(d, "image", imageName, diags)
+	if disk.Spec.Source != nil {
+		if disk.Spec.Source.DiskImageRef != nil {
+			imageName := path.Base(*disk.Spec.Source.DiskImageRef)
+			diags = setDiag(d, "image", imageName, diags)
+		}
+		if disk.Spec.Source.SnapshotRef != nil {
+			diags = setDiag(d, "snapshot", *disk.Spec.Source.SnapshotRef, diags)
+		}
 	}
 
 	// Set zone if present

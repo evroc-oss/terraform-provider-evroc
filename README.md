@@ -425,6 +425,7 @@ Complete, production-ready examples in the [`examples/`](examples/) directory:
 - **[disk](examples/disk/)** - Disk creation and management
 - **[disk-attachment](examples/disk-attachment/)** - Hot-attach disks to running VMs
 - **[placement-groups](examples/placement-groups/)** - VM placement strategies for high availability
+- **[loadbalancer](examples/loadbalancer/)** - HA k3s control plane behind an L4 load balancer across 3 zones
 - **[public-ip](examples/public-ip/)** - Public IP allocation
 - **[project](examples/project/)** - Project management
 
@@ -502,6 +503,7 @@ Then omit `access_key` and `secret_key` from the backend block.
 | `evroc_bucket` | S3-compatible object storage |
 | `evroc_bucket_service_account` | S3 access credentials |
 | `evroc_project` | Project management |
+| `evroc_loadbalancer` | Layer 4 (TCP) load balancer with backend pool |
 
 ### Data Sources
 
@@ -518,6 +520,7 @@ Then omit `access_key` and `secret_key` from the backend block.
 | `evroc_bucket` | Look up existing buckets |
 | `evroc_bucket_service_account` | Look up existing service accounts |
 | `evroc_project` | Look up existing projects |
+| `evroc_loadbalancer` | Look up existing load balancers |
 
 ### Key Fields Reference
 

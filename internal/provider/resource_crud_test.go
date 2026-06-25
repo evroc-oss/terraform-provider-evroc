@@ -1023,7 +1023,7 @@ func TestCustomerScenarioMultiVMPublicIPAndSG(t *testing.T) {
 	// Register VM resource handlers for each VM.
 	for _, name := range vmNames {
 		vm := vms[name]
-		resourcePath := fmt.Sprintf("/compute/v1beta1/projects/test-project/regions/se-sto/virtualMachines/%s", name)
+		resourcePath := fmt.Sprintf("/compute/v1beta2/projects/test-project/regions/se-sto/virtualMachines/%s", name)
 		ms.mux.HandleFunc(resourcePath, func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
@@ -1031,7 +1031,7 @@ func TestCustomerScenarioMultiVMPublicIPAndSG(t *testing.T) {
 			case http.MethodPatch:
 				var patch computetypes.VirtualMachine
 				if err := json.NewDecoder(r.Body).Decode(&patch); err == nil {
-					if patch.Spec.Networking != nil && patch.Spec.Networking.PublicIPv4Address != nil {
+					if patch.Spec.Networking.PublicIPv4Address != nil {
 						if patch.Spec.Networking.PublicIPv4Address.Static != nil &&
 							patch.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != nil &&
 							*patch.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != "" {
@@ -1052,7 +1052,7 @@ func TestCustomerScenarioMultiVMPublicIPAndSG(t *testing.T) {
 	// polls this until the IP is no longer held by the source VM.
 	for _, name := range pipNames {
 		pip := pips[name]
-		resourcePath := fmt.Sprintf("/networking/v1beta1/projects/test-project/regions/se-sto/publicIPs/%s", name)
+		resourcePath := fmt.Sprintf("/networking/v1beta2/projects/test-project/regions/se-sto/publicIPs/%s", name)
 		ms.mux.HandleFunc(resourcePath, func(w http.ResponseWriter, r *http.Request) {
 			respondJSON(w, http.StatusOK, pip)
 		})
@@ -1061,7 +1061,7 @@ func TestCustomerScenarioMultiVMPublicIPAndSG(t *testing.T) {
 	// Register security group handlers for the shared + dedicated groups.
 	for _, name := range sgNames {
 		sg := mockSecurityGroup(name)
-		resourcePath := fmt.Sprintf("/networking/v1beta1/projects/test-project/regions/se-sto/securityGroups/%s", name)
+		resourcePath := fmt.Sprintf("/networking/v1beta2/projects/test-project/regions/se-sto/securityGroups/%s", name)
 		ms.mux.HandleFunc(resourcePath, func(w http.ResponseWriter, r *http.Request) {
 			respondJSON(w, http.StatusOK, sg)
 		})

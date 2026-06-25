@@ -62,7 +62,7 @@ func TestBuildDiskCreateRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := BuildDiskCreateRequest(tt.diskName, tt.sizeGB, tt.image, tt.zone, tt.userLabels)
+			req := BuildDiskCreateRequest(tt.diskName, tt.sizeGB, tt.image, "", tt.zone, tt.userLabels)
 			if req == nil {
 				t.Fatal("expected non-nil request")
 			}
@@ -573,7 +573,7 @@ func TestBuildVirtualMachineCreateRequest(t *testing.T) {
 			req := BuildVirtualMachineCreateRequest(
 				config.Client, tt.vmName, tt.flavor, tt.bootDisk,
 				tt.dataDisks, tt.sshKeys, tt.userData, tt.publicIP, tt.zone,
-				tt.securityGroups, tt.placementGroup, tt.running, tt.userLabels,
+				tt.securityGroups, tt.placementGroup, "", "", tt.running, tt.userLabels,
 			)
 			if req == nil {
 				t.Fatal("expected non-nil request")

@@ -98,9 +98,8 @@ func dataSourceDiskRead(ctx context.Context, d *schema.ResourceData, meta interf
 	// Set image if present (DiskImageRef is a string reference path)
 	// API returns full path like "/compute/global/diskImages/ubuntu-22.04"
 	// Extract just the image name (last part of path)
-	if disk.Spec.DiskImageRef != nil {
-		imagePath := derefString(disk.Spec.DiskImageRef)
-		imageName := path.Base(imagePath)
+	if disk.Spec.Source != nil && disk.Spec.Source.DiskImageRef != nil {
+		imageName := path.Base(*disk.Spec.Source.DiskImageRef)
 		diags = setDiag(d, "image", imageName, diags)
 	}
 

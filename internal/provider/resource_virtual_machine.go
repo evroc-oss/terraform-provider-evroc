@@ -117,6 +117,22 @@ func resourceVirtualMachine() *schema.Resource {
 				ValidateDiagFunc: validateZone(),
 				Description:      "Zone for the VM (e.g., a, b, c).",
 			},
+			"subnet_ref": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: suppressFQIDDiff,
+				Description:      "Subnet for the VM. Defaults to the zone's default subnet. Accepts FQID or plain name.",
+			},
+			"stack_type": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ForceNew:         true,
+				ValidateDiagFunc: validateVMStackType(),
+				Description:      "Network stack type: 'dual-stack' (IPv4 + IPv6), 'ipv6-only', or 'ipv4-only'. Defaults to the subnet's stack type.",
+			},
 			"placement_group": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -176,6 +192,11 @@ func resourceVirtualMachine() *schema.Resource {
 				Computed:    true,
 				Description: "Assigned private IPv4 address of the VM.",
 			},
+			"ipv6_address": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Assigned IPv6 GUA address of the VM (when stack_type is dual-stack or ipv6-only).",
+			},
 		},
 	}
 }
@@ -222,6 +243,19 @@ func resourceVirtualMachineCreate(ctx context.Context, d *schema.ResourceData, m
 		}
 	}
 
+	var subnetRef string
+	if sr, ok := d.GetOk("subnet_ref"); ok {
+		subnetRef = sr.(string)
+		if !isFQID(subnetRef) {
+			subnetRef = client.Compute().SubnetRef(subnetRef)
+		}
+	}
+
+	var stackType string
+	if st, ok := d.GetOk("stack_type"); ok {
+		stackType = st.(string)
+	}
+
 	var placementGroup string
 	if pg, ok := d.GetOk("placement_group"); ok {
 		placementGroup = pg.(string)
@@ -246,7 +280,7 @@ func resourceVirtualMachineCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	// Build VM create request using SDK builder
-	req := BuildVirtualMachineCreateRequest(client, name, flavor, bootDisk, dataDisks, sshKeys, userData, publicIP, zone, securityGroups, placementGroup, running, userLabels)
+	req := BuildVirtualMachineCreateRequest(client, name, flavor, bootDisk, dataDisks, sshKeys, userData, publicIP, zone, securityGroups, placementGroup, subnetRef, stackType, running, userLabels)
 
 	vm, err := client.Compute().VirtualMachines().Create(ctx, req)
 	if err != nil {
@@ -358,26 +392,29 @@ func setVMOSSettings(d *schema.ResourceData, vm *computetypes.VirtualMachine, di
 func setVMNetworking(d *schema.ResourceData, vm *computetypes.VirtualMachine, diags diag.Diagnostics) diag.Diagnostics {
 	// Public IP ref — clear state when removed
 	publicIPSet := false
-	if vm.Spec.Networking != nil {
-		if vm.Spec.Networking.PublicIPv4Address != nil && vm.Spec.Networking.PublicIPv4Address.Static != nil {
-			if vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != nil {
-				diags = setDiag(d, "public_ip", *vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef, diags)
-				publicIPSet = true
-			}
+	if vm.Spec.Networking.PublicIPv4Address != nil && vm.Spec.Networking.PublicIPv4Address.Static != nil {
+		if vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != nil {
+			diags = setDiag(d, "public_ip", *vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef, diags)
+			publicIPSet = true
 		}
+	}
 
-		// Security groups — clear state when all removed
-		if vm.Spec.Networking.SecurityGroupSettings != nil && vm.Spec.Networking.SecurityGroupSettings.SecurityGroupMemberRefs != nil {
-			sgs := append([]string{}, *vm.Spec.Networking.SecurityGroupSettings.SecurityGroupMemberRefs...)
-			diags = setDiag(d, "security_groups", sgs, diags)
-		} else {
-			diags = setDiag(d, "security_groups", []string{}, diags)
-		}
+	if vm.Spec.Networking.SecurityGroupSettings != nil && vm.Spec.Networking.SecurityGroupSettings.SecurityGroupMemberRefs != nil {
+		sgs := append([]string{}, *vm.Spec.Networking.SecurityGroupSettings.SecurityGroupMemberRefs...)
+		diags = setDiag(d, "security_groups", sgs, diags)
 	} else {
 		diags = setDiag(d, "security_groups", []string{}, diags)
 	}
 	if !publicIPSet {
 		diags = setDiag(d, "public_ip", "", diags)
+	}
+
+	if vm.Spec.Networking.SubnetRef != "" {
+		diags = setDiag(d, "subnet_ref", vm.Spec.Networking.SubnetRef, diags)
+	}
+
+	if vm.Spec.Networking.StackType != nil {
+		diags = setDiag(d, "stack_type", string(*vm.Spec.Networking.StackType), diags)
 	}
 
 	// Status networking — clear when absent
@@ -392,9 +429,15 @@ func setVMNetworking(d *schema.ResourceData, vm *computetypes.VirtualMachine, di
 		} else {
 			diags = setDiag(d, "private_ipv4_address", "", diags)
 		}
+		if vm.Status.Networking.Ipv6Address != nil {
+			diags = setDiag(d, "ipv6_address", *vm.Status.Networking.Ipv6Address, diags)
+		} else {
+			diags = setDiag(d, "ipv6_address", "", diags)
+		}
 	} else {
 		diags = setDiag(d, "public_ipv4_address", "", diags)
 		diags = setDiag(d, "private_ipv4_address", "", diags)
+		diags = setDiag(d, "ipv6_address", "", diags)
 	}
 
 	return diags
@@ -639,8 +682,7 @@ func applyPublicIPChanges(ctx context.Context, d *schema.ResourceData, client *e
 			if err != nil {
 				return retry.NonRetryableError(err)
 			}
-			if vm.Spec.Networking == nil ||
-				vm.Spec.Networking.PublicIPv4Address == nil ||
+			if vm.Spec.Networking.PublicIPv4Address == nil ||
 				vm.Spec.Networking.PublicIPv4Address.Static == nil ||
 				vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef == nil ||
 				*vm.Spec.Networking.PublicIPv4Address.Static.PublicIPRef != pipFQID {
