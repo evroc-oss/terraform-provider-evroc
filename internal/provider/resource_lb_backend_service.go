@@ -70,6 +70,12 @@ func resourceLBBackendService() *schema.Resource {
 				Default:     false,
 				Description: "Enable PROXY protocol to pass the real client IP to backends.",
 			},
+			"ip_protocol_selection": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Description:      "IP protocol selection for backends. Valid values are \"IPv4\" and \"IPv6\".",
+				ValidateDiagFunc: validateIPProtocolSelection(),
+			},
 			"health_check": {
 				Type:        schema.TypeList,
 				Optional:    true,
@@ -157,46 +163,6 @@ func resourceLBBackendService() *schema.Resource {
 								},
 							},
 						},
-						"https": {
-							Type:        schema.TypeList,
-							Optional:    true,
-							MaxItems:    1,
-							Description: "HTTPS health check configuration.",
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"path": {
-										Type:        schema.TypeString,
-										Required:    true,
-										Description: "Absolute request path (e.g., \"/healthz\").",
-									},
-									"method": {
-										Type:        schema.TypeString,
-										Optional:    true,
-										Default:     "GET",
-										Description: "HTTP method used for health checks (GET or HEAD).",
-									},
-									"host": {
-										Type:        schema.TypeString,
-										Optional:    true,
-										Description: "Host header value for the health check request.",
-									},
-									"expected_statuses": {
-										Type:        schema.TypeList,
-										Optional:    true,
-										Description: "List of HTTP response status codes considered healthy.",
-										Elem: &schema.Schema{
-											Type: schema.TypeInt,
-										},
-									},
-									"insecure_skip_verify": {
-										Type:        schema.TypeBool,
-										Optional:    true,
-										Default:     false,
-										Description: "Disable TLS certificate verification for health checks.",
-									},
-								},
-							},
-						},
 					},
 				},
 			},
@@ -232,10 +198,17 @@ func resourceLBBackendService() *schema.Resource {
 				Computed:    true,
 				Description: "Fully qualified resource ID (FQID). Use this to reference this resource from other resources.",
 			},
-			"backend_count": {
-				Type:        schema.TypeInt,
+			"backends": {
+				Type:        schema.TypeList,
 				Computed:    true,
-				Description: "Number of resolved backend addresses for this service.",
+				Description: "Resolved backend addresses for this service.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name":    {Type: schema.TypeString, Computed: true, Description: "Backend name."},
+						"zone":    {Type: schema.TypeString, Computed: true, Description: "Availability zone."},
+						"address": {Type: schema.TypeString, Computed: true, Description: "IP address."},
+					},
+				},
 			},
 		},
 	}
@@ -298,39 +271,6 @@ func expandHealthCheckHTTP(hcMap map[string]interface{}, hc *lbtypes.Backendserv
 	hc.Http = httpHC
 }
 
-func expandHealthCheckHTTPS(hcMap map[string]interface{}, hc *lbtypes.BackendserviceSpecHealthCheck) {
-	httpsList, ok := hcMap["https"].([]interface{})
-	if !ok || len(httpsList) == 0 || httpsList[0] == nil {
-		return
-	}
-	httpsMap := httpsList[0].(map[string]interface{})
-	httpsHC := &struct {
-		ExpectedStatuses *[]int32                                          `json:"expectedStatuses,omitempty"`
-		Host             *string                                           `json:"host,omitempty"`
-		Method           *lbtypes.BackendserviceSpecHealthCheckHttpsMethod `json:"method,omitempty"`
-		Path             string                                            `json:"path"`
-		Tls              *lbtypes.BackendserviceSpecHealthCheckTls         `json:"tls,omitempty"` //nolint:staticcheck,revive // matches SDK anonymous struct field name
-	}{
-		Path: httpsMap["path"].(string),
-	}
-	if v, ok := httpsMap["method"].(string); ok && v != "" {
-		m := lbtypes.BackendserviceSpecHealthCheckHttpsMethod(v)
-		httpsHC.Method = &m
-	}
-	if v, ok := httpsMap["host"].(string); ok && v != "" {
-		httpsHC.Host = &v
-	}
-	if statuses, ok := httpsMap["expected_statuses"].([]interface{}); ok && len(statuses) > 0 {
-		httpsHC.ExpectedStatuses = expandInt32Statuses(statuses)
-	}
-	if v, ok := httpsMap["insecure_skip_verify"].(bool); ok && v {
-		httpsHC.Tls = &lbtypes.BackendserviceSpecHealthCheckTls{
-			InsecureSkipVerify: &v,
-		}
-	}
-	hc.Https = httpsHC
-}
-
 func expandHealthCheck(d *schema.ResourceData) *lbtypes.BackendserviceSpecHealthCheck {
 	v, ok := d.GetOk("health_check")
 	if !ok {
@@ -364,7 +304,6 @@ func expandHealthCheck(d *schema.ResourceData) *lbtypes.BackendserviceSpecHealth
 
 	expandHealthCheckTCP(hcMap, hc)
 	expandHealthCheckHTTP(hcMap, hc)
-	expandHealthCheckHTTPS(hcMap, hc)
 
 	return hc
 }
@@ -422,31 +361,6 @@ func flattenHealthCheck(hc *lbtypes.BackendserviceSpecHealthCheck) []interface{}
 		m["http"] = []interface{}{http}
 	}
 
-	if hc.Https != nil {
-		https := map[string]interface{}{
-			"path": hc.Https.Path,
-		}
-		if hc.Https.Method != nil {
-			https["method"] = string(*hc.Https.Method)
-		}
-		if hc.Https.Host != nil {
-			https["host"] = *hc.Https.Host
-		}
-		if hc.Https.ExpectedStatuses != nil {
-			statuses := make([]interface{}, len(*hc.Https.ExpectedStatuses))
-			for i, s := range *hc.Https.ExpectedStatuses {
-				statuses[i] = int(s)
-			}
-			https["expected_statuses"] = statuses
-		}
-		skipVerify := false
-		if hc.Https.Tls != nil && hc.Https.Tls.InsecureSkipVerify != nil {
-			skipVerify = *hc.Https.Tls.InsecureSkipVerify
-		}
-		https["insecure_skip_verify"] = skipVerify
-		m["https"] = []interface{}{https}
-	}
-
 	return []interface{}{m}
 }
 
@@ -472,6 +386,11 @@ func resourceLBBackendServiceCreate(ctx context.Context, d *schema.ResourceData,
 	}
 
 	req := BuildBackendServiceCreateRequest(name, port, backendPoolRef, proxyProtocol, userLabels)
+
+	if v, ok := d.GetOk("ip_protocol_selection"); ok {
+		sel := lbtypes.BackendserviceSpecIpProtocolSelection(v.(string))
+		req.Spec.IpProtocolSelection = &sel
+	}
 
 	if hc := expandHealthCheck(d); hc != nil {
 		req.Spec.HealthCheck = hc
@@ -520,6 +439,10 @@ func resourceLBBackendServiceRead(ctx context.Context, d *schema.ResourceData, m
 	}
 	diags = setDiag(d, "proxy_protocol", proxyProtocol, diags)
 
+	if svc.Spec.IpProtocolSelection != nil {
+		diags = setDiag(d, "ip_protocol_selection", string(*svc.Spec.IpProtocolSelection), diags)
+	}
+
 	if svc.Metadata.UserLabels != nil && len(*svc.Metadata.UserLabels) > 0 {
 		diags = setDiag(d, "user_labels", flattenLabels(svc.Metadata.UserLabels), diags)
 	}
@@ -527,7 +450,17 @@ func resourceLBBackendServiceRead(ctx context.Context, d *schema.ResourceData, m
 	diags = setDiag(d, "system_labels", flattenLabels(svc.Metadata.SystemLabels), diags)
 	diags = setDiag(d, "fqid", client.LoadBalancer().BackendServiceRef(svc.Metadata.Id), diags)
 
-	diags = setDiag(d, "backend_count", svc.Status.Backends, diags)
+	if svc.Status.Backends != nil {
+		backends := make([]map[string]interface{}, len(*svc.Status.Backends))
+		for i, b := range *svc.Status.Backends {
+			backends[i] = map[string]interface{}{
+				"name":    b.Name,
+				"zone":    b.Zone,
+				"address": b.Address,
+			}
+		}
+		diags = setDiag(d, "backends", backends, diags)
+	}
 
 	if svc.Spec.HealthCheck != nil {
 		diags = setDiag(d, "health_check", flattenHealthCheck(svc.Spec.HealthCheck), diags)
@@ -563,6 +496,15 @@ func resourceLBBackendServiceUpdate(ctx context.Context, d *schema.ResourceData,
 	if d.HasChange("proxy_protocol") {
 		pp := d.Get("proxy_protocol").(bool)
 		svc.Spec.ProxyProtocol = &pp
+	}
+
+	if d.HasChange("ip_protocol_selection") {
+		if v, ok := d.GetOk("ip_protocol_selection"); ok {
+			sel := lbtypes.BackendserviceSpecIpProtocolSelection(v.(string))
+			svc.Spec.IpProtocolSelection = &sel
+		} else {
+			svc.Spec.IpProtocolSelection = nil
+		}
 	}
 
 	if d.HasChange("health_check") {

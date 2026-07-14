@@ -897,6 +897,176 @@ func setupThinkSizesHandlers(ms *mockServer) {
 	})
 }
 
+// ---------- Service Account mock responses ----------
+
+func mockServiceAccount(name string) *iamtypes.Serviceaccount {
+	conds := []iamtypes.ServiceaccountStatusConditionsItem{
+		{Type: "Ready", Status: "True"},
+	}
+	uid := openapi_types.UUID{}
+	enabled := true
+	desc := "Test service account"
+	oauthID := "oauth-client-id-123"
+	return &iamtypes.Serviceaccount{
+		ApiVersion: "v1beta1",
+		Kind:       "ServiceAccount",
+		Metadata: iamtypes.GlobalProjectMetadataResponse{
+			Id:                name,
+			CreationTimestamp: time.Now(),
+			Generation:        1,
+			Uid:               uid,
+		},
+		Spec: iamtypes.ServiceaccountSpec{
+			Description: &desc,
+			Enabled:     &enabled,
+		},
+		Status: iamtypes.ServiceaccountStatus{
+			Conditions:    &conds,
+			OauthClientId: &oauthID,
+		},
+	}
+}
+
+func setupServiceAccountHandlers(ms *mockServer, name string) {
+	sa := mockServiceAccount(name)
+	resourcePath := fmt.Sprintf("/iam/v1beta1/projects/test-project/serviceAccounts/%s", name)
+	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/serviceAccounts", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			respondJSON(w, http.StatusCreated, sa)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	})
+	ms.mux.HandleFunc(resourcePath, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			if ms.isDeleted(resourcePath) {
+				respondJSON(w, http.StatusNotFound, map[string]string{"reason": "not found"})
+				return
+			}
+			respondJSON(w, http.StatusOK, sa)
+		case http.MethodDelete:
+			ms.markDeleted(resourcePath)
+			w.WriteHeader(http.StatusNoContent)
+		case http.MethodPatch:
+			respondJSON(w, http.StatusOK, sa)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	})
+}
+
+// ---------- Service Account Credential mock responses ----------
+
+func mockServiceAccountCredential(name string) *iamtypes.Serviceaccountcredential {
+	conds := []iamtypes.ServiceaccountcredentialStatusConditionsItem{
+		{Type: "Ready", Status: "True"},
+	}
+	uid := openapi_types.UUID{}
+	desc := "Test credential"
+	privateKey := "base64-encoded-private-key-jwk"
+	lifetime := 3600
+	credType := iamtypes.Rs256Jwt
+	return &iamtypes.Serviceaccountcredential{
+		ApiVersion: "v1beta1",
+		Kind:       "ServiceAccountCredential",
+		Metadata: iamtypes.GlobalProjectMetadataResponse{
+			Id:                name,
+			CreationTimestamp: time.Now(),
+			Generation:        1,
+			Uid:               uid,
+		},
+		Spec: iamtypes.ServiceaccountcredentialSpec{
+			AccountRef: iamtypes.ServiceaccountcredentialSpecAccountRef{
+				Fqid: "/iam/projects/test-project/serviceAccounts/test-sa",
+			},
+			Description: &desc,
+			ExpiresAt:   time.Now().Add(24 * time.Hour),
+			Type:        credType,
+			Rs256Jwt: &iamtypes.ServiceaccountcredentialSpecRs256Jwt{
+				AccessTokenLifetime: &lifetime,
+			},
+		},
+		Status: iamtypes.ServiceaccountcredentialStatus{
+			Conditions:    &conds,
+			PrivateKeyJwk: &privateKey,
+		},
+	}
+}
+
+func setupServiceAccountCredentialHandlers(ms *mockServer, name string) {
+	cred := mockServiceAccountCredential(name)
+	resourcePath := fmt.Sprintf("/iam/v1beta1/projects/test-project/serviceAccounts/test-sa/serviceAccountCredentials/%s", name)
+	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/serviceAccounts/test-sa/serviceAccountCredentials", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			respondJSON(w, http.StatusCreated, cred)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	})
+	ms.mux.HandleFunc(resourcePath, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			if ms.isDeleted(resourcePath) {
+				respondJSON(w, http.StatusNotFound, map[string]string{"reason": "not found"})
+				return
+			}
+			respondJSON(w, http.StatusOK, cred)
+		case http.MethodDelete:
+			ms.markDeleted(resourcePath)
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	})
+}
+
+// ---------- Role Binding mock responses ----------
+
+func setupRoleBindingHandlers(ms *mockServer) {
+	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/roleBindings/assign", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			respondJSON(w, http.StatusOK, map[string]interface{}{
+				"principalType":     "ServiceAccount",
+				"principalID":       "test-sa",
+				"roles":             []map[string]string{{"name": "/iam/roles/computeOperator"}},
+				"uid":               "rb-uid-123",
+				"resourceVersion":   "1",
+				"creationTimestamp": "2026-07-09T00:00:00Z",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	})
+	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/roleBindings/revoke", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			respondJSON(w, http.StatusOK, map[string]interface{}{
+				"principalType":     "ServiceAccount",
+				"principalID":       "test-sa",
+				"roles":             []map[string]string{},
+				"uid":               "rb-uid-123",
+				"resourceVersion":   "2",
+				"creationTimestamp": "2026-07-09T00:00:00Z",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	})
+	ms.mux.HandleFunc("/iam/v1beta1/roles", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			respondJSON(w, http.StatusOK, map[string]interface{}{
+				"items": []map[string]interface{}{
+					{"id": "/iam/roles/computeOperator", "description": "Manage compute resources", "scope": "project"},
+					{"id": "/iam/roles/computeViewer", "description": "Read-only compute access", "scope": "project"},
+					{"id": "/iam/roles/projectOwner", "description": "Full project control", "scope": "project"},
+				},
+			})
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	})
+}
+
 // ---------- Catch-all handler ----------
 
 // setupCatchAll adds a catch-all handler for debugging unexpected requests.

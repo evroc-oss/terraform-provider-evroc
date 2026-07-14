@@ -13,6 +13,10 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+func ipProtocolPtr(v lbtypes.BackendserviceSpecIpProtocolSelection) *lbtypes.BackendserviceSpecIpProtocolSelection {
+	return &v
+}
+
 func mockLoadBalancer(name string) *lbtypes.Loadbalancer {
 	conds := []lbtypes.LoadbalancerStatusConditionsItem{
 		{Type: "Ready", Status: "True"},
@@ -150,12 +154,15 @@ func mockBackendService(name string) *lbtypes.Backendservice {
 			Uid:               uid,
 		},
 		Spec: lbtypes.BackendserviceSpec{
-			Port:           80,
-			BackendPoolRef: &poolRef,
+			Port:                80,
+			BackendPoolRef:      &poolRef,
+			IpProtocolSelection: ipProtocolPtr(lbtypes.IPv4),
 		},
 		Status: lbtypes.BackendserviceStatus{
 			Conditions: &conds,
-			Backends:   1,
+			Backends: &[]lbtypes.BackendserviceStatusBackendsItem{
+				{Name: "test-backend", Zone: "se-sto-1a", Address: "10.0.0.1"},
+			},
 		},
 	}
 }

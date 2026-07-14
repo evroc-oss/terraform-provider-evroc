@@ -454,13 +454,13 @@ func TestProviderSchema(t *testing.T) {
 	}
 
 	// Verify resource count
-	expectedResources := 20
+	expectedResources := 23
 	if len(p.ResourcesMap) != expectedResources {
 		t.Errorf("expected %d resources, got %d", expectedResources, len(p.ResourcesMap))
 	}
 
 	// Verify data source count
-	expectedDataSources := 23
+	expectedDataSources := 29
 	if len(p.DataSourcesMap) != expectedDataSources {
 		t.Errorf("expected %d data sources, got %d", expectedDataSources, len(p.DataSourcesMap))
 	}
@@ -479,6 +479,9 @@ func TestProviderSchema(t *testing.T) {
 		"evroc_think_instance",
 		"evroc_think_api_key",
 		"evroc_permission_set",
+		"evroc_service_account",
+		"evroc_service_account_credential",
+		"evroc_role_binding",
 		"evroc_loadbalancer",
 		"evroc_lb_backend_pool",
 		"evroc_lb_backend_service",
@@ -507,6 +510,12 @@ func TestProviderSchema(t *testing.T) {
 		"evroc_think_models",
 		"evroc_think_sizes",
 		"evroc_permission_set",
+		"evroc_service_account",
+		"evroc_service_account_credential",
+		"evroc_roles",
+		"evroc_organization_quota",
+		"evroc_project_quota",
+		"evroc_bucket_service_account_secret",
 		"evroc_loadbalancer",
 		"evroc_lb_backend_pool",
 		"evroc_lb_backend_service",

@@ -1,12 +1,12 @@
 module github.com/evroc-oss/terraform-provider-evroc
 
-go 1.25.11
+go 1.25.12
 
 require (
-	github.com/evroc-oss/evroc-go-sdk v0.6.0
+	github.com/evroc-oss/evroc-go-sdk v0.7.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.0
 	github.com/hashicorp/terraform-plugin-testing v1.15.0
-	github.com/oapi-codegen/runtime v1.4.1
+	github.com/oapi-codegen/runtime v1.4.2
 )
 
 require (

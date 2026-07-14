@@ -56,6 +56,19 @@ func New(version string) func() *schema.Provider {
 					DefaultFunc: schema.EnvDefaultFunc("EVROC_PASSWORD", nil),
 					Description: "evroc API password for authentication. Can also be set via EVROC_PASSWORD environment variable. Use this with username OR use token.",
 				},
+				"service_account_id": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					DefaultFunc: schema.EnvDefaultFunc("EVROC_SERVICE_ACCOUNT_ID", nil),
+					Description: "evroc service account ID for authentication. Can also be set via EVROC_SERVICE_ACCOUNT_ID environment variable. Use with service_account_secret.",
+				},
+				"service_account_secret": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Sensitive:   true,
+					DefaultFunc: schema.EnvDefaultFunc("EVROC_SERVICE_ACCOUNT_SECRET", nil),
+					Description: "evroc service account private key (base64-encoded JWK or file path). Can also be set via EVROC_SERVICE_ACCOUNT_SECRET environment variable. Use with service_account_id.",
+				},
 				"organization": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -83,52 +96,61 @@ func New(version string) func() *schema.Provider {
 			},
 
 			ResourcesMap: map[string]*schema.Resource{
-				"evroc_disk":                    resourceDisk(),
-				"evroc_snapshot":                resourceSnapshot(),
-				"evroc_vpc":                     resourceVPC(),
-				"evroc_subnet":                  resourceSubnet(),
-				"evroc_public_ip":               resourcePublicIP(),
-				"evroc_loadbalancer":            resourceLoadBalancer(),
-				"evroc_lb_backend_pool":         resourceLBBackendPool(),
-				"evroc_lb_backend_service":      resourceLBBackendService(),
-				"evroc_lb_l4_route":             resourceLBL4Route(),
-				"evroc_virtual_machine":         resourceVirtualMachine(),
-				"evroc_security_group":          resourceSecurityGroup(),
-				"evroc_placement_group":         resourcePlacementGroup(),
-				"evroc_hotswap_disk_attachment": resourceHotswapDiskAttachment(),
-				"evroc_bucket":                  resourceBucket(),
-				"evroc_bucket_service_account":  resourceBucketServiceAccount(),
-				"evroc_filestore":               resourceFilestore(),
-				"evroc_project":                 resourceProject(),
-				"evroc_think_instance":          resourceThinkInstance(),
-				"evroc_think_api_key":           resourceThinkAPIKey(),
-				"evroc_permission_set":          resourcePermissionSet(),
+				"evroc_disk":                       resourceDisk(),
+				"evroc_snapshot":                   resourceSnapshot(),
+				"evroc_vpc":                        resourceVPC(),
+				"evroc_subnet":                     resourceSubnet(),
+				"evroc_public_ip":                  resourcePublicIP(),
+				"evroc_loadbalancer":               resourceLoadBalancer(),
+				"evroc_lb_backend_pool":            resourceLBBackendPool(),
+				"evroc_lb_backend_service":         resourceLBBackendService(),
+				"evroc_lb_l4_route":                resourceLBL4Route(),
+				"evroc_virtual_machine":            resourceVirtualMachine(),
+				"evroc_security_group":             resourceSecurityGroup(),
+				"evroc_placement_group":            resourcePlacementGroup(),
+				"evroc_hotswap_disk_attachment":    resourceHotswapDiskAttachment(),
+				"evroc_bucket":                     resourceBucket(),
+				"evroc_bucket_service_account":     resourceBucketServiceAccount(),
+				"evroc_filestore":                  resourceFilestore(),
+				"evroc_project":                    resourceProject(),
+				"evroc_think_instance":             resourceThinkInstance(),
+				"evroc_think_api_key":              resourceThinkAPIKey(),
+				"evroc_permission_set":             resourcePermissionSet(),
+				"evroc_service_account":            resourceServiceAccount(),
+				"evroc_service_account_credential": resourceServiceAccountCredential(),
+				"evroc_role_binding":               resourceRoleBinding(),
 			},
 
 			DataSourcesMap: map[string]*schema.Resource{
-				"evroc_disk":                    dataSourceDisk(),
-				"evroc_snapshot":                dataSourceSnapshot(),
-				"evroc_vpc":                     dataSourceVPC(),
-				"evroc_subnet":                  dataSourceSubnet(),
-				"evroc_public_ip":               dataSourcePublicIP(),
-				"evroc_loadbalancer":            dataSourceLoadBalancer(),
-				"evroc_lb_backend_pool":         dataSourceLBBackendPool(),
-				"evroc_lb_backend_service":      dataSourceLBBackendService(),
-				"evroc_lb_l4_route":             dataSourceLBL4Route(),
-				"evroc_virtual_machine":         dataSourceVirtualMachine(),
-				"evroc_security_group":          dataSourceSecurityGroup(),
-				"evroc_placement_group":         dataSourcePlacementGroup(),
-				"evroc_hotswap_disk_attachment": dataSourceHotswapDiskAttachment(),
-				"evroc_bucket":                  dataSourceBucket(),
-				"evroc_bucket_service_account":  dataSourceBucketServiceAccount(),
-				"evroc_filestore":               dataSourceFilestore(),
-				"evroc_disk_images":             dataSourceDiskImages(),
-				"evroc_compute_profiles":        dataSourceComputeProfiles(),
-				"evroc_project":                 dataSourceProject(),
-				"evroc_think_instance":          dataSourceThinkInstance(),
-				"evroc_think_models":            dataSourceThinkModels(),
-				"evroc_think_sizes":             dataSourceThinkSizes(),
-				"evroc_permission_set":          dataSourcePermissionSet(),
+				"evroc_disk":                          dataSourceDisk(),
+				"evroc_snapshot":                      dataSourceSnapshot(),
+				"evroc_vpc":                           dataSourceVPC(),
+				"evroc_subnet":                        dataSourceSubnet(),
+				"evroc_public_ip":                     dataSourcePublicIP(),
+				"evroc_loadbalancer":                  dataSourceLoadBalancer(),
+				"evroc_lb_backend_pool":               dataSourceLBBackendPool(),
+				"evroc_lb_backend_service":            dataSourceLBBackendService(),
+				"evroc_lb_l4_route":                   dataSourceLBL4Route(),
+				"evroc_virtual_machine":               dataSourceVirtualMachine(),
+				"evroc_security_group":                dataSourceSecurityGroup(),
+				"evroc_placement_group":               dataSourcePlacementGroup(),
+				"evroc_hotswap_disk_attachment":       dataSourceHotswapDiskAttachment(),
+				"evroc_bucket":                        dataSourceBucket(),
+				"evroc_bucket_service_account":        dataSourceBucketServiceAccount(),
+				"evroc_bucket_service_account_secret": dataSourceBucketServiceAccountSecret(),
+				"evroc_filestore":                     dataSourceFilestore(),
+				"evroc_disk_images":                   dataSourceDiskImages(),
+				"evroc_compute_profiles":              dataSourceComputeProfiles(),
+				"evroc_project":                       dataSourceProject(),
+				"evroc_think_instance":                dataSourceThinkInstance(),
+				"evroc_think_models":                  dataSourceThinkModels(),
+				"evroc_think_sizes":                   dataSourceThinkSizes(),
+				"evroc_permission_set":                dataSourcePermissionSet(),
+				"evroc_service_account":               dataSourceServiceAccount(),
+				"evroc_service_account_credential":    dataSourceServiceAccountCredential(),
+				"evroc_roles":                         dataSourceRoles(),
+				"evroc_organization_quota":            dataSourceOrganizationQuota(),
+				"evroc_project_quota":                 dataSourceProjectQuota(),
 			},
 		}
 
@@ -294,6 +316,8 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 		refreshToken := d.Get("refresh_token").(string)
 		username := d.Get("username").(string)
 		password := d.Get("password").(string)
+		serviceAccountID := d.Get("service_account_id").(string)
+		serviceAccountSecret := d.Get("service_account_secret").(string)
 		organization := d.Get("organization").(string)
 		project := d.Get("project").(string)
 		region := d.Get("region").(string)
@@ -301,18 +325,31 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 
 		hasToken := token != "" || refreshToken != ""
 		hasUsernamePassword := username != "" && password != ""
+		hasServiceAccount := serviceAccountID != "" && serviceAccountSecret != ""
 
-		if hasToken && hasUsernamePassword {
-			return nil, diag.Errorf("provide either 'token' OR 'username'+'password', not both")
+		authMethods := 0
+		if hasToken {
+			authMethods++
+		}
+		if hasUsernamePassword {
+			authMethods++
+		}
+		if hasServiceAccount {
+			authMethods++
+		}
+		if authMethods > 1 {
+			return nil, diag.Errorf("provide only one authentication method: 'token', 'username'+'password', or 'service_account_id'+'service_account_secret'")
 		}
 
-		if hasToken || hasUsernamePassword {
+		if hasToken || hasUsernamePassword || hasServiceAccount {
 			cfg := &config.Config{
 				Auth: config.AuthConfig{
-					Token:        token,
-					RefreshToken: refreshToken,
-					Username:     username,
-					Password:     password,
+					Token:                token,
+					RefreshToken:         refreshToken,
+					Username:             username,
+					Password:             password,
+					ServiceAccountID:     serviceAccountID,
+					ServiceAccountSecret: serviceAccountSecret,
 				},
 				API: config.APIConfig{
 					BaseURL: apiEndpoint,

@@ -37,6 +37,12 @@ resource "evroc_project" "staging" {
   }
 }
 
+# Check organization quota usage
+data "evroc_organization_quota" "current" {}
+
+# Check project quota usage
+data "evroc_project_quota" "current" {}
+
 # Output the project IDs
 output "dev_project_id" {
   description = "UUID of the dev project"
@@ -51,4 +57,19 @@ output "dev_project_name" {
 output "staging_project_id" {
   description = "UUID of the staging project"
   value       = evroc_project.staging.project_id
+}
+
+output "org_compute_vcpus" {
+  description = "Organization vCPU quota"
+  value       = "${data.evroc_organization_quota.current.usage_vcpus} / ${data.evroc_organization_quota.current.compute_vcpus} vCPUs"
+}
+
+output "org_public_ips" {
+  description = "Organization public IP quota"
+  value       = "${data.evroc_organization_quota.current.usage_public_ips} / ${data.evroc_organization_quota.current.networking_public_ips} public IPs"
+}
+
+output "project_storage" {
+  description = "Project object storage quota"
+  value       = "limit: ${data.evroc_project_quota.current.object_storage_total_size}"
 }
