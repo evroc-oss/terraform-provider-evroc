@@ -63,6 +63,10 @@ data "evroc_bucket_service_account" "app_access" {
   name = evroc_bucket_service_account.app_access.name
 }
 
+data "evroc_bucket_service_account_secret" "app_access" {
+  name = evroc_bucket_service_account.app_access.credentials_secret
+}
+
 # Output bucket details
 output "app_data_bucket_id" {
   value       = evroc_bucket.app_data.bucket_id
@@ -95,4 +99,17 @@ output "backup_credentials_secret" {
 output "accessible_buckets" {
   value       = data.evroc_bucket_service_account.app_access.buckets
   description = "List of buckets accessible by app service account"
+}
+
+# S3 credentials for direct use (e.g., in app config)
+output "s3_access_key_id" {
+  value       = data.evroc_bucket_service_account_secret.app_access.access_key_id
+  description = "S3 access key ID for the app service account"
+  sensitive   = true
+}
+
+output "s3_secret_access_key" {
+  value       = data.evroc_bucket_service_account_secret.app_access.secret_access_key
+  description = "S3 secret access key for the app service account"
+  sensitive   = true
 }

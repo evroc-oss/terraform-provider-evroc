@@ -82,10 +82,17 @@ func dataSourceLBBackendService() *schema.Resource {
 				Computed:    true,
 				Description: "Fully qualified resource ID (FQID).",
 			},
-			"backend_count": {
-				Type:        schema.TypeInt,
+			"backends": {
+				Type:        schema.TypeList,
 				Computed:    true,
-				Description: "Number of resolved backend addresses for this service.",
+				Description: "Resolved backend addresses for this service.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name":    {Type: schema.TypeString, Computed: true},
+						"zone":    {Type: schema.TypeString, Computed: true},
+						"address": {Type: schema.TypeString, Computed: true},
+					},
+				},
 			},
 			"health_check": {
 				Type:        schema.TypeList,
@@ -176,7 +183,17 @@ func dataSourceLBBackendServiceRead(ctx context.Context, d *schema.ResourceData,
 	diags = setDiag(d, "system_labels", flattenLabels(svc.Metadata.SystemLabels), diags)
 	diags = setDiag(d, "fqid", client.LoadBalancer().BackendServiceRef(svc.Metadata.Id), diags)
 
-	diags = setDiag(d, "backend_count", svc.Status.Backends, diags)
+	if svc.Status.Backends != nil {
+		backends := make([]map[string]interface{}, len(*svc.Status.Backends))
+		for i, b := range *svc.Status.Backends {
+			backends[i] = map[string]interface{}{
+				"name":    b.Name,
+				"zone":    b.Zone,
+				"address": b.Address,
+			}
+		}
+		diags = setDiag(d, "backends", backends, diags)
+	}
 
 	if svc.Spec.HealthCheck != nil {
 		diags = setDiag(d, "health_check", flattenHealthCheck(svc.Spec.HealthCheck), diags)

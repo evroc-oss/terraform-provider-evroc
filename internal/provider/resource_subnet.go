@@ -259,9 +259,13 @@ func resourceSubnetRead(ctx context.Context, d *schema.ResourceData, meta interf
 
 	if subnet.Status.AssignedIPv6GUABlock != nil {
 		diags = setDiag(d, "assigned_ipv6_gua_block", *subnet.Status.AssignedIPv6GUABlock, diags)
+	} else {
+		diags = setDiag(d, "assigned_ipv6_gua_block", "", diags)
 	}
 	if subnet.Status.AvailableIPv4AddressCount != nil {
 		diags = setDiag(d, "available_ipv4_address_count", *subnet.Status.AvailableIPv4AddressCount, diags)
+	} else {
+		diags = setDiag(d, "available_ipv4_address_count", 0, diags)
 	}
 	if subnet.Status.AvailableIPv4Ranges != nil {
 		diags = setDiag(d, "available_ipv4_ranges", *subnet.Status.AvailableIPv4Ranges, diags)

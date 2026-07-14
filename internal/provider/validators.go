@@ -126,6 +126,10 @@ func validateSubnetCIDR() schema.SchemaValidateDiagFunc {
 	})
 }
 
+func validateIPProtocolSelection() schema.SchemaValidateDiagFunc {
+	return validation.ToDiagFunc(validation.StringInSlice([]string{"IPv4", "IPv6"}, false))
+}
+
 // validatePositiveInt validates that an integer is positive (> 0)
 func validatePositiveInt() schema.SchemaValidateDiagFunc {
 	return validation.ToDiagFunc(func(i interface{}, k string) (warnings []string, errors []error) {

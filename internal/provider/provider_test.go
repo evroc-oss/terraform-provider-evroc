@@ -70,8 +70,8 @@ func TestConfigureBothAuth(t *testing.T) {
 	if !diags.HasError() {
 		t.Fatal("expected error when both token and username/password are provided")
 	}
-	if !strings.Contains(diags[0].Summary, "not both") {
-		t.Errorf("expected 'not both' error, got: %s", diags[0].Summary)
+	if !strings.Contains(diags[0].Summary, "only one authentication method") {
+		t.Errorf("expected 'only one authentication method' error, got: %s", diags[0].Summary)
 	}
 }
 
@@ -186,7 +186,7 @@ func TestConfigureWithUsernamePassword(t *testing.T) {
 		t.Fatal("expected error from auth endpoint with fake credentials")
 	}
 	// Verify we reached client creation (not input validation)
-	if strings.Contains(diags[0].Summary, "not both") || strings.Contains(diags[0].Summary, "no credentials found") {
+	if strings.Contains(diags[0].Summary, "only one authentication method") || strings.Contains(diags[0].Summary, "no credentials found") {
 		t.Errorf("expected auth error, got input validation error: %s", diags[0].Summary)
 	}
 }
