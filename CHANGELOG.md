@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-07-16
+
+### Changed
+- Adapt `evroc_roles` data source for regenerated SDK IAM types (`RoleInfo.Id`, `*RoleInfo.Description`, `RoleInfoScope`)
+
+### Dependencies
+- evroc Go SDK v0.7.2
+
+## [0.7.1] - 2026-07-14
+
+### Changed
+- Documentation now recommends service account authentication for CI/CD instead of username/password
+- Removed username/password from all README examples, env var tables, and config file samples
+- Added `service_account_id` and `service_account_secret` to the provider env var reference table
+- Added missing IAM resources and data sources to the README tables
+
+### Deprecated
+- `username` and `password` provider attributes — use `service_account_id` and `service_account_secret` instead
+
+### Documentation
+- Provider and resource docs updated
+
 ## [0.7.0] - 2026-07-14
 
 ### Added
@@ -133,7 +155,7 @@ Initial public release of the evroc Terraform Provider.
 - Cross-project resource management from a single provider instance
 - Project creation with automatic wait for auth propagation
 - Project deletion with wait for async cleanup
-- Token-based and username/password authentication
+- Token-based authentication
 - Automatic token refresh via refresh tokens
 - Resource import support for all resources
 - Acceptance tests for all resources with full CRUD coverage
@@ -146,7 +168,8 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.7.2...HEAD
+[0.7.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.1
 [0.5.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.5.1
 [0.4.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.2
 [0.4.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.1
@@ -154,3 +177,4 @@ Initial public release of the evroc Terraform Provider.
 [0.4.3]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.3
 [0.5.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.5.0
 [0.7.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.0
+[0.7.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.2

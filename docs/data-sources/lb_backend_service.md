@@ -26,8 +26,8 @@ Get information about an existing evroc load balancer backend service.
 
 ### Read-Only
 
-- `backend_count` (Number) Number of resolved backend addresses for this service.
 - `backend_pool_ref` (String) Fully qualified reference to the backend pool.
+- `backends` (List of Object) Resolved backend addresses for this service. (see [below for nested schema](#nestedatt--backends))
 - `created_at` (String) Timestamp when the backend service was created (RFC3339 format).
 - `fqid` (String) Fully qualified resource ID (FQID).
 - `health_check` (List of Object) Active health check configuration for this backend service. (see [below for nested schema](#nestedatt--health_check))
@@ -37,6 +37,16 @@ Get information about an existing evroc load balancer backend service.
 - `service_id` (String) Unique identifier (UUID) of the backend service.
 - `system_labels` (Map of String) System-managed labels (read-only).
 - `user_labels` (Map of String) User-defined labels (key/value pairs).
+
+<a id="nestedatt--backends"></a>
+### Nested Schema for `backends`
+
+Read-Only:
+
+- `address` (String)
+- `name` (String)
+- `zone` (String)
+
 
 <a id="nestedatt--health_check"></a>
 ### Nested Schema for `health_check`
