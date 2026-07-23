@@ -79,6 +79,13 @@ func newTestProviderConfig(t *testing.T, serverURL string) *ProviderConfig {
 		Client:  newTestClient(t, serverURL),
 		Project: "test-project",
 		Region:  "se-sto",
+		baseConfig: &config.Config{
+			Context: config.ContextConfig{
+				Organization: "test-org",
+				Project:      "test-project",
+				Region:       "se-sto",
+			},
+		},
 		clients: make(map[string]*evroc.Client),
 	}
 }
@@ -478,11 +485,18 @@ func setupProjectHandlers(ms *mockServer, name string) {
 	project := mockProject(name)
 	resourcePath := fmt.Sprintf("/iam/v1beta1/projects/%s", name)
 	ms.mux.HandleFunc("/iam/v1beta1/projects", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
+		switch r.Method {
+		case http.MethodPost:
 			respondJSON(w, http.StatusCreated, project)
-			return
+		case http.MethodGet:
+			if ms.isDeleted(resourcePath) {
+				respondJSON(w, http.StatusOK, map[string]interface{}{"items": []interface{}{}})
+			} else {
+				respondJSON(w, http.StatusOK, map[string]interface{}{"items": []interface{}{project}})
+			}
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
-		w.WriteHeader(http.StatusMethodNotAllowed)
 	})
 	ms.mux.HandleFunc(resourcePath, func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -1023,35 +1037,94 @@ func setupServiceAccountCredentialHandlers(ms *mockServer, name string) {
 
 // ---------- Role Binding mock responses ----------
 
+func mockProjectRoleBinding() map[string]interface{} {
+	return map[string]interface{}{
+		"apiVersion": "iam/v1beta1",
+		"kind":       "RoleBinding",
+		"metadata": map[string]interface{}{
+			"id":                "rb-test",
+			"uid":               "00000000-0000-0000-0000-000000000123",
+			"creationTimestamp": "2026-07-09T00:00:00Z",
+			"generation":        1,
+			"resourceVersion":   "1",
+			"project":           "test-project",
+		},
+		"spec": map[string]interface{}{
+			"principal": "/iam/projects/test-project/serviceAccounts/test-sa",
+			"roles": []map[string]interface{}{
+				{"name": "/iam/roles/computeOperator"},
+			},
+		},
+		"status": map[string]interface{}{},
+	}
+}
+
+func mockOrgRoleBinding() map[string]interface{} {
+	return map[string]interface{}{
+		"apiVersion": "iam/v1beta1",
+		"kind":       "RoleBinding",
+		"metadata": map[string]interface{}{
+			"id":                "org-rb-test",
+			"uid":               "00000000-0000-0000-0000-000000000456",
+			"creationTimestamp": "2026-07-09T00:00:00Z",
+			"generation":        1,
+			"resourceVersion":   "1",
+			"organization":      "test-org",
+		},
+		"spec": map[string]interface{}{
+			"principal": "/iam/users/00000000-0000-0000-0000-000000000789",
+			"roles": []map[string]interface{}{
+				{"name": "/iam/roles/organizationViewer"},
+			},
+		},
+		"status": map[string]interface{}{},
+	}
+}
+
 func setupRoleBindingHandlers(ms *mockServer) {
-	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/roleBindings/assign", func(w http.ResponseWriter, r *http.Request) {
+	// Project-scoped role binding CRUD
+	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/roleBindings/rb-test", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			respondJSON(w, http.StatusOK, mockProjectRoleBinding())
+		case http.MethodPatch:
+			respondJSON(w, http.StatusOK, mockProjectRoleBinding())
+		case http.MethodDelete:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	})
+	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/roleBindings", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			respondJSON(w, http.StatusOK, map[string]interface{}{
-				"principalType":     "ServiceAccount",
-				"principalID":       "test-sa",
-				"roles":             []map[string]string{{"name": "/iam/roles/computeOperator"}},
-				"uid":               "rb-uid-123",
-				"resourceVersion":   "1",
-				"creationTimestamp": "2026-07-09T00:00:00Z",
-			})
+			respondJSON(w, http.StatusCreated, mockProjectRoleBinding())
 			return
 		}
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	})
-	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/roleBindings/revoke", func(w http.ResponseWriter, r *http.Request) {
+
+	// Organization-scoped role binding CRUD
+	ms.mux.HandleFunc("/iam/v1beta1/organizations/test-org/roleBindings/org-rb-test", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			respondJSON(w, http.StatusOK, mockOrgRoleBinding())
+		case http.MethodPatch:
+			respondJSON(w, http.StatusOK, mockOrgRoleBinding())
+		case http.MethodDelete:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	})
+	ms.mux.HandleFunc("/iam/v1beta1/organizations/test-org/roleBindings", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			respondJSON(w, http.StatusOK, map[string]interface{}{
-				"principalType":     "ServiceAccount",
-				"principalID":       "test-sa",
-				"roles":             []map[string]string{},
-				"uid":               "rb-uid-123",
-				"resourceVersion":   "2",
-				"creationTimestamp": "2026-07-09T00:00:00Z",
-			})
+			respondJSON(w, http.StatusCreated, mockOrgRoleBinding())
 			return
 		}
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	})
+
+	// Role catalog
 	ms.mux.HandleFunc("/iam/v1beta1/roles", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			respondJSON(w, http.StatusOK, map[string]interface{}{
@@ -1059,6 +1132,7 @@ func setupRoleBindingHandlers(ms *mockServer) {
 					{"id": "/iam/roles/computeOperator", "description": "Manage compute resources", "scope": "project"},
 					{"id": "/iam/roles/computeViewer", "description": "Read-only compute access", "scope": "project"},
 					{"id": "/iam/roles/projectOwner", "description": "Full project control", "scope": "project"},
+					{"id": "/iam/roles/organizationViewer", "description": "Read-only org access", "scope": "organization"},
 				},
 			})
 			return

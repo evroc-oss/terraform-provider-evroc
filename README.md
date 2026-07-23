@@ -33,7 +33,7 @@ Declaratively manage your evroc cloud infrastructure — provision VMs, configur
 | **Compute** | Virtual machines, disks, disk attachments, placement groups |
 | **Networking** | Public IPs, security groups |
 | **Storage** | S3-compatible buckets and service accounts |
-| **IAM** | Projects, permission sets |
+| **IAM** | Projects, permission sets, service accounts, role bindings |
 
 ## Requirements
 
@@ -169,10 +169,10 @@ Use the same `main.tf` as Option 1 above, but omit the `version` constraint (dev
 
 ### 1. Authenticate with evroc
 
-The provider reads credentials automatically using the following priority:
+The provider supports service account authentication (recommended for CI/CD) and token-based authentication. Credentials are resolved in this order:
 
 1. **Explicit provider attributes** (in the `provider "evroc" {}` block)
-2. **Environment variables** (`EVROC_TOKEN`, `EVROC_REFRESH_TOKEN`, etc.)
+2. **Environment variables** (`EVROC_SERVICE_ACCOUNT_ID`, `EVROC_TOKEN`, etc.)
 3. **evroc CLI config file** (`~/.evroc/config.yaml`)
 
 #### Option A: Use the evroc CLI (Recommended)
@@ -196,14 +196,14 @@ provider "evroc" {}
 Set credentials directly via environment variables. This is useful for CI/CD pipelines or when using service accounts:
 
 ```bash
-# Token-based authentication (use evroc CLI to obtain tokens)
-export EVROC_REFRESH_TOKEN="your-refresh-token"
+# Service account authentication (recommended for CI/CD)
+export EVROC_SERVICE_ACCOUNT_ID="sa-cicd-pipeline"
+export EVROC_SERVICE_ACCOUNT_SECRET="<base64-encoded JWK or path to key file>"
 export EVROC_PROJECT="your-project-uuid"
 export EVROC_REGION="se-sto"
 
-# OR username/password authentication (service accounts)
-export EVROC_USERNAME="service-account-id"
-export EVROC_PASSWORD="service-account-secret"
+# OR token-based authentication (extract refresh_token from ~/.evroc/config.yaml after `evroc login`)
+export EVROC_REFRESH_TOKEN="your-refresh-token"
 export EVROC_PROJECT="your-project-uuid"
 export EVROC_REGION="se-sto"
 ```
@@ -214,11 +214,24 @@ Then use an empty provider block:
 provider "evroc" {}
 ```
 
+> **Creating a service account:** See the [`examples/service-account/`](examples/service-account/) directory for a complete walkthrough — create a service account, assign roles, generate credentials, and configure your CI/CD runner.
+
+> **Important:** Service account credentials have an expiration date (`expires_at`) and the private key is only returned once at creation time. Store it securely. Plan for credential rotation before expiry.
+
 #### Option C: Explicit provider attributes
 
 ```hcl
+# Service account authentication (recommended for CI/CD)
 provider "evroc" {
-  token         = var.evroc_token
+  service_account_id     = var.evroc_sa_id
+  service_account_secret = var.evroc_sa_secret
+  project                = "your-project-id"
+  region                 = "se-sto"
+  organization           = "your-organization-id"  # Only needed for IAM project creation
+}
+
+# OR token-based authentication (refresh_token from ~/.evroc/config.yaml after `evroc login`)
+provider "evroc" {
   refresh_token = var.evroc_refresh_token
   project       = "your-project-id"
   region        = "se-sto"
@@ -240,12 +253,12 @@ The config file format:
 
 ```yaml
 auth:
-  # Token-based authentication
-  refresh_token: "your-refresh-token"
+  # Service account authentication (recommended for CI/CD):
+  service_account_id: "sa-cicd-pipeline"
+  service_account_secret: "<base64-encoded JWK or path to key file>"
 
-  # OR username/password authentication (service accounts):
-  # username: "service-account-id"
-  # password: "service-account-secret"
+  # OR token-based authentication:
+  # refresh_token: "your-refresh-token"
 
 context:
   project: "your-project-uuid"
@@ -426,6 +439,7 @@ Complete, production-ready examples in the [`examples/`](examples/) directory:
 - **[disk-attachment](examples/disk-attachment/)** - Hot-attach disks to running VMs
 - **[placement-groups](examples/placement-groups/)** - VM placement strategies for high availability
 - **[loadbalancer](examples/loadbalancer/)** - HA k3s control plane behind an L4 load balancer across 3 zones
+- **[service-account](examples/service-account/)** - IAM service accounts with role bindings and credentials for CI/CD
 - **[public-ip](examples/public-ip/)** - Public IP allocation
 - **[project](examples/project/)** - Project management
 
@@ -439,10 +453,10 @@ The provider supports multiple authentication methods (see [Quick Start](#1-auth
 
 | Provider Attribute | Environment Variable | Notes |
 |-------------------|---------------------|-------|
+| `service_account_id` | `EVROC_SERVICE_ACCOUNT_ID` | Service account auth (recommended for CI/CD) |
+| `service_account_secret` | `EVROC_SERVICE_ACCOUNT_SECRET` | Base64-encoded JWK or path to key file |
 | `token` | `EVROC_TOKEN` | Access token |
 | `refresh_token` | `EVROC_REFRESH_TOKEN` | For automatic token renewal |
-| `username` | `EVROC_USERNAME` | Service account auth |
-| `password` | `EVROC_PASSWORD` | Service account auth |
 | `project` | `EVROC_PROJECT` | Required |
 | `region` | `EVROC_REGION` | Defaults to `se-sto` |
 | `organization` | `EVROC_ORGANIZATION` | Only for IAM project creation |
@@ -503,7 +517,11 @@ Then omit `access_key` and `secret_key` from the backend block.
 | `evroc_bucket` | S3-compatible object storage |
 | `evroc_bucket_service_account` | S3 access credentials |
 | `evroc_project` | Project management |
+| `evroc_permission_set` | IAM permission sets |
 | `evroc_loadbalancer` | Layer 4 (TCP) load balancer with backend pool |
+| `evroc_service_account` | IAM service accounts for programmatic API access |
+| `evroc_service_account_credential` | Credentials (JWK key pairs) for service accounts |
+| `evroc_role_binding` | Bind IAM roles to users or service accounts |
 
 ### Data Sources
 
@@ -518,9 +536,14 @@ Then omit `access_key` and `secret_key` from the backend block.
 | `evroc_security_group` | Look up existing security groups |
 | `evroc_placement_group` | Look up existing placement groups |
 | `evroc_bucket` | Look up existing buckets |
-| `evroc_bucket_service_account` | Look up existing service accounts |
+| `evroc_bucket_service_account` | Look up existing bucket service accounts |
+| `evroc_bucket_service_account_secret` | Retrieve S3 credentials for a bucket service account |
 | `evroc_project` | Look up existing projects |
+| `evroc_permission_set` | Look up existing permission sets |
 | `evroc_loadbalancer` | Look up existing load balancers |
+| `evroc_service_account` | Look up existing IAM service accounts |
+| `evroc_service_account_credential` | Look up existing service account credentials |
+| `evroc_roles` | List available IAM roles |
 
 ### Key Fields Reference
 
@@ -629,6 +652,7 @@ The provider's Read function is called and the full resource block is written in
 - **Import Existing Resources** - Bring existing evroc resources under Terraform management
 - **Parallel Execution** - Create/update/delete resources concurrently when possible
 - **Type Safety** - Validate configuration before deployment
+- **Service Account Auth** - JWT-based authentication for CI/CD pipelines and automation
 - **Token Auto-Refresh** - Automatic token refresh using refresh tokens
 - **Resource Waiters** - Built-in waiting for async operations (VM/disk creation)
 

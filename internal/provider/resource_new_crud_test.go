@@ -642,8 +642,14 @@ func TestResourceRoleBindingCreate(t *testing.T) {
 	config := newTestProviderConfig(t, ms.server.URL)
 	res := resourceRoleBinding()
 	d := newTestResourceData(t, res)
+	d.Set("name", "rb-test")
 	d.Set("principal", "/iam/projects/test-project/serviceAccounts/test-sa")
-	d.Set("role", "/iam/roles/computeOperator")
+	d.Set("roles", []interface{}{
+		map[string]interface{}{
+			"role":      "/iam/roles/computeOperator",
+			"resources": []interface{}{},
+		},
+	})
 
 	ctx := context.Background()
 	diags := resourceRoleBindingCreate(ctx, d, config)
@@ -654,7 +660,26 @@ func TestResourceRoleBindingCreate(t *testing.T) {
 		t.Error("expected ID to be set after create")
 	}
 	assertField(t, d, "principal", "/iam/projects/test-project/serviceAccounts/test-sa")
-	assertField(t, d, "role", "/iam/roles/computeOperator")
+}
+
+func TestResourceRoleBindingRead(t *testing.T) {
+	ms := newMockServer()
+	defer ms.close()
+	setupRoleBindingHandlers(ms)
+	setupCatchAll(ms)
+
+	config := newTestProviderConfig(t, ms.server.URL)
+	res := resourceRoleBinding()
+	d := newTestResourceData(t, res)
+	d.SetId("rb-test")
+
+	ctx := context.Background()
+	diags := resourceRoleBindingRead(ctx, d, config)
+	if diags.HasError() {
+		t.Fatalf("unexpected read error: %v", diagnosticsToString(diags))
+	}
+	assertField(t, d, "principal", "/iam/projects/test-project/serviceAccounts/test-sa")
+	assertField(t, d, "uid", "00000000-0000-0000-0000-000000000123")
 }
 
 func TestResourceRoleBindingDelete(t *testing.T) {
@@ -666,12 +691,81 @@ func TestResourceRoleBindingDelete(t *testing.T) {
 	config := newTestProviderConfig(t, ms.server.URL)
 	res := resourceRoleBinding()
 	d := newTestResourceData(t, res)
-	d.SetId("/iam/projects/test-project/serviceAccounts/test-sa//iam/roles/computeOperator")
-	d.Set("principal", "/iam/projects/test-project/serviceAccounts/test-sa")
-	d.Set("role", "/iam/roles/computeOperator")
+	d.SetId("rb-test")
 
 	ctx := context.Background()
 	diags := resourceRoleBindingDelete(ctx, d, config)
+	if diags.HasError() {
+		t.Fatalf("unexpected delete error: %v", diagnosticsToString(diags))
+	}
+}
+
+// ============================================================================
+// Org Role Binding CRUD Tests
+// ============================================================================
+
+func TestResourceOrgRoleBindingCreate(t *testing.T) {
+	ms := newMockServer()
+	defer ms.close()
+	setupRoleBindingHandlers(ms)
+	setupCatchAll(ms)
+
+	config := newTestProviderConfig(t, ms.server.URL)
+	res := resourceOrgRoleBinding()
+	d := newTestResourceData(t, res)
+	d.Set("name", "org-rb-test")
+	d.Set("principal", "/iam/users/00000000-0000-0000-0000-000000000789")
+	d.Set("roles", []interface{}{
+		map[string]interface{}{
+			"role":      "/iam/roles/organizationViewer",
+			"resources": []interface{}{},
+		},
+	})
+
+	ctx := context.Background()
+	diags := resourceOrgRoleBindingCreate(ctx, d, config)
+	if diags.HasError() {
+		t.Fatalf("unexpected create error: %v", diagnosticsToString(diags))
+	}
+	if d.Id() == "" {
+		t.Error("expected ID to be set after create")
+	}
+	assertField(t, d, "principal", "/iam/users/00000000-0000-0000-0000-000000000789")
+}
+
+func TestResourceOrgRoleBindingRead(t *testing.T) {
+	ms := newMockServer()
+	defer ms.close()
+	setupRoleBindingHandlers(ms)
+	setupCatchAll(ms)
+
+	config := newTestProviderConfig(t, ms.server.URL)
+	res := resourceOrgRoleBinding()
+	d := newTestResourceData(t, res)
+	d.SetId("org-rb-test")
+
+	ctx := context.Background()
+	diags := resourceOrgRoleBindingRead(ctx, d, config)
+	if diags.HasError() {
+		t.Fatalf("unexpected read error: %v", diagnosticsToString(diags))
+	}
+	assertField(t, d, "principal", "/iam/users/00000000-0000-0000-0000-000000000789")
+	assertField(t, d, "uid", "00000000-0000-0000-0000-000000000456")
+}
+
+func TestResourceOrgRoleBindingDelete(t *testing.T) {
+	ms := newMockServer()
+	defer ms.close()
+	setupRoleBindingHandlers(ms)
+	setupCatchAll(ms)
+
+	config := newTestProviderConfig(t, ms.server.URL)
+	res := resourceOrgRoleBinding()
+	d := newTestResourceData(t, res)
+	d.SetId("org-rb-test")
+
+	ctx := context.Background()
+	diags := resourceOrgRoleBindingDelete(ctx, d, config)
 	if diags.HasError() {
 		t.Fatalf("unexpected delete error: %v", diagnosticsToString(diags))
 	}
@@ -697,8 +791,8 @@ func TestDataSourceRolesRead(t *testing.T) {
 		t.Fatalf("unexpected read error: %v", diagnosticsToString(diags))
 	}
 	roles := d.Get("roles").([]interface{})
-	if len(roles) != 3 {
-		t.Fatalf("expected 3 roles, got %d", len(roles))
+	if len(roles) != 4 {
+		t.Fatalf("expected 4 roles, got %d", len(roles))
 	}
 	first := roles[0].(map[string]interface{})
 	if first["id"] != "/iam/roles/computeOperator" {

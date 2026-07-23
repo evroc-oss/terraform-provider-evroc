@@ -54,12 +54,19 @@ func dataSourceRolesRead(ctx context.Context, d *schema.ResourceData, meta inter
 
 	d.SetId("iam-roles")
 
-	items := make([]map[string]interface{}, len(roles.Items))
-	for i, r := range roles.Items {
-		items[i] = map[string]interface{}{
-			"id":          r.ID,
-			"description": r.Description,
-			"scope":       r.Scope,
+	var items []map[string]interface{}
+	if roles.Items != nil {
+		items = make([]map[string]interface{}, len(*roles.Items))
+		for i, r := range *roles.Items {
+			desc := ""
+			if r.Description != nil {
+				desc = *r.Description
+			}
+			items[i] = map[string]interface{}{
+				"id":          r.Id,
+				"description": desc,
+				"scope":       string(r.Scope),
+			}
 		}
 	}
 

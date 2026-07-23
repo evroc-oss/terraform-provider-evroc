@@ -19,9 +19,11 @@ description: |-
 - `api_endpoint` (String) evroc API endpoint. Can also be set via EVROC_API_ENDPOINT environment variable.
 - `config_file` (String) Path to evroc SDK config YAML file. Can also be set via EVROC_CONFIG_FILE environment variable. When set, authentication and context are loaded from this file. If not set, falls back to ~/.evroc/config.yaml or explicit provider attributes.
 - `organization` (String) evroc organization ID. Can also be set via EVROC_ORGANIZATION environment variable.
-- `password` (String, Sensitive) evroc API password for authentication. Can also be set via EVROC_PASSWORD environment variable. Use this with username OR use token.
+- `password` (String, Sensitive, Deprecated) evroc API password for authentication. Can also be set via EVROC_PASSWORD environment variable.
 - `project` (String) Default evroc project ID. Can also be set via EVROC_PROJECT environment variable. Can be overridden per resource.
 - `refresh_token` (String, Sensitive) evroc API refresh token for automatic token renewal. Can also be set via EVROC_REFRESH_TOKEN environment variable.
 - `region` (String) Default evroc region (e.g., se-sto). Can also be set via EVROC_REGION environment variable.
-- `token` (String, Sensitive) evroc API token for authentication. Can also be set via EVROC_TOKEN environment variable. Use this OR username/password.
-- `username` (String) evroc API username for authentication. Can also be set via EVROC_USERNAME environment variable. Use this with password OR use token.
+- `service_account_id` (String) evroc service account ID for authentication. Can also be set via EVROC_SERVICE_ACCOUNT_ID environment variable. Use with service_account_secret.
+- `service_account_secret` (String, Sensitive) evroc service account private key (base64-encoded JWK or file path). Can also be set via EVROC_SERVICE_ACCOUNT_SECRET environment variable. Use with service_account_id.
+- `token` (String, Sensitive) evroc API token for authentication. Can also be set via EVROC_TOKEN environment variable.
+- `username` (String, Deprecated) evroc API username for authentication. Can also be set via EVROC_USERNAME environment variable.

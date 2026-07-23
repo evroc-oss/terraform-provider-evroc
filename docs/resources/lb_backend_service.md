@@ -24,6 +24,7 @@ Provides an evroc load balancer backend service resource. A backend service defi
 ### Optional
 
 - `health_check` (Block List, Max: 1) Active health check configuration for this backend service. (see [below for nested schema](#nestedblock--health_check))
+- `ip_protocol_selection` (String) IP protocol selection for backends. Valid values are "IPv4" and "IPv6".
 - `project` (String) Project this resource belongs to. Defaults to the provider project.
 - `proxy_protocol` (Boolean) Enable PROXY protocol to pass the real client IP to backends.
 - `region` (String) Region where the backend service is created. Defaults to provider region.
@@ -32,7 +33,7 @@ Provides an evroc load balancer backend service resource. A backend service defi
 
 ### Read-Only
 
-- `backend_count` (Number) Number of resolved backend addresses for this service.
+- `backends` (List of Object) Resolved backend addresses for this service. (see [below for nested schema](#nestedatt--backends))
 - `created_at` (String) Timestamp when the backend service was created (RFC3339 format).
 - `fqid` (String) Fully qualified resource ID (FQID). Use this to reference this resource from other resources.
 - `id` (String) The ID of this resource.
@@ -46,7 +47,6 @@ Optional:
 
 - `healthy_threshold` (Number) Number of consecutive successes before marking an endpoint healthy.
 - `http` (Block List, Max: 1) HTTP health check configuration. (see [below for nested schema](#nestedblock--health_check--http))
-- `https` (Block List, Max: 1) HTTPS health check configuration. (see [below for nested schema](#nestedblock--health_check--https))
 - `interval` (String) Duration between health check attempts (e.g., "5s", "10s").
 - `target_port` (Number) Backend endpoint port to check. Defaults to the backend service port.
 - `tcp` (Block List, Max: 1) TCP health check configuration. (see [below for nested schema](#nestedblock--health_check--tcp))
@@ -64,21 +64,6 @@ Optional:
 
 - `expected_statuses` (List of Number) List of HTTP response status codes considered healthy.
 - `host` (String) Host header value for the health check request.
-- `method` (String) HTTP method used for health checks (GET or HEAD).
-
-
-<a id="nestedblock--health_check--https"></a>
-### Nested Schema for `health_check.https`
-
-Required:
-
-- `path` (String) Absolute request path (e.g., "/healthz").
-
-Optional:
-
-- `expected_statuses` (List of Number) List of HTTP response status codes considered healthy.
-- `host` (String) Host header value for the health check request.
-- `insecure_skip_verify` (Boolean) Disable TLS certificate verification for health checks.
 - `method` (String) HTTP method used for health checks (GET or HEAD).
 
 
@@ -100,3 +85,13 @@ Optional:
 - `create` (String)
 - `delete` (String)
 - `update` (String)
+
+
+<a id="nestedatt--backends"></a>
+### Nested Schema for `backends`
+
+Read-Only:
+
+- `address` (String)
+- `name` (String)
+- `zone` (String)

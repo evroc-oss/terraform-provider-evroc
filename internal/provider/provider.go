@@ -34,7 +34,7 @@ func New(version string) func() *schema.Provider {
 					Optional:    true,
 					Sensitive:   true,
 					DefaultFunc: schema.EnvDefaultFunc("EVROC_TOKEN", nil),
-					Description: "evroc API token for authentication. Can also be set via EVROC_TOKEN environment variable. Use this OR username/password.",
+					Description: "evroc API token for authentication. Can also be set via EVROC_TOKEN environment variable.",
 				},
 				"refresh_token": {
 					Type:        schema.TypeString,
@@ -46,15 +46,17 @@ func New(version string) func() *schema.Provider {
 				"username": {
 					Type:        schema.TypeString,
 					Optional:    true,
+					Deprecated:  "Use service_account_id and service_account_secret instead.",
 					DefaultFunc: schema.EnvDefaultFunc("EVROC_USERNAME", nil),
-					Description: "evroc API username for authentication. Can also be set via EVROC_USERNAME environment variable. Use this with password OR use token.",
+					Description: "evroc API username for authentication. Can also be set via EVROC_USERNAME environment variable.",
 				},
 				"password": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Sensitive:   true,
+					Deprecated:  "Use service_account_id and service_account_secret instead.",
 					DefaultFunc: schema.EnvDefaultFunc("EVROC_PASSWORD", nil),
-					Description: "evroc API password for authentication. Can also be set via EVROC_PASSWORD environment variable. Use this with username OR use token.",
+					Description: "evroc API password for authentication. Can also be set via EVROC_PASSWORD environment variable.",
 				},
 				"service_account_id": {
 					Type:        schema.TypeString,
@@ -119,6 +121,7 @@ func New(version string) func() *schema.Provider {
 				"evroc_service_account":            resourceServiceAccount(),
 				"evroc_service_account_credential": resourceServiceAccountCredential(),
 				"evroc_role_binding":               resourceRoleBinding(),
+				"evroc_org_role_binding":           resourceOrgRoleBinding(),
 			},
 
 			DataSourcesMap: map[string]*schema.Resource{
@@ -149,6 +152,8 @@ func New(version string) func() *schema.Provider {
 				"evroc_service_account":               dataSourceServiceAccount(),
 				"evroc_service_account_credential":    dataSourceServiceAccountCredential(),
 				"evroc_roles":                         dataSourceRoles(),
+				"evroc_role_binding":                  dataSourceRoleBinding(),
+				"evroc_org_role_binding":              dataSourceOrgRoleBinding(),
 				"evroc_organization_quota":            dataSourceOrganizationQuota(),
 				"evroc_project_quota":                 dataSourceProjectQuota(),
 			},
