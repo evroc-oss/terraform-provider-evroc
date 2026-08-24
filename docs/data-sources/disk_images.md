@@ -3,12 +3,12 @@
 page_title: "evroc_disk_images Data Source - evroc"
 subcategory: ""
 description: |-
-  Lists all available disk images in the evroc platform. Exposes both a list and individual named attributes for easy reference.
+  Lists the disk images currently available in the evroc platform, queried live from the API. Exposes both a list and individual named attributes for easy reference; a named attribute is empty when that image is not offered.
 ---
 
 # evroc_disk_images (Data Source)
 
-Lists all available disk images in the evroc platform. Exposes both a list and individual named attributes for easy reference.
+Lists the disk images currently available in the evroc platform, queried live from the API. Exposes both a list and individual named attributes for easy reference; a named attribute is empty when that image is not offered.
 
 
 
@@ -17,6 +17,7 @@ Lists all available disk images in the evroc platform. Exposes both a list and i
 
 ### Read-Only
 
+- `details` (List of Object) Details for each available disk image, in the same order as the images list. (see [below for nested schema](#nestedatt--details))
 - `id` (String) The ID of this resource.
 - `images` (List of String) List of all available disk image names.
 - `opensuse_15_5_1` (String) OpenSUSE 15.5.1 image.
@@ -31,3 +32,17 @@ Lists all available disk images in the evroc platform. Exposes both a list and i
 - `ubuntu_22_04_1` (String) Ubuntu 22.04.1 image.
 - `ubuntu_24_04_1` (String) Ubuntu 24.04.1 image.
 - `ubuntu_minimal_24_04_1` (String) Ubuntu 24.04.1 Minimal image.
+
+<a id="nestedatt--details"></a>
+### Nested Schema for `details`
+
+Read-Only:
+
+- `default_size_amount` (Number)
+- `default_size_unit` (String)
+- `gpu_affinities` (List of String)
+- `name` (String)
+- `os_arch` (String)
+- `os_image` (String)
+- `os_version` (String)
+- `version` (Number)

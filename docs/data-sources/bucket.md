@@ -28,9 +28,70 @@ Retrieves information about an existing evroc storage bucket.
 - `bucket_id` (String) Unique identifier of the bucket.
 - `created_at` (String) Timestamp when the bucket was created.
 - `id` (String) The ID of this resource.
+- `lifecycle_rule` (List of Object) Lifecycle rules that determine how and when objects or object versions are automatically deleted. (see [below for nested schema](#nestedatt--lifecycle_rule))
 - `object_locking` (List of Object) Default object locking configuration. (see [below for nested schema](#nestedatt--object_locking))
 - `object_retention_mode` (String) Object retention mode of the bucket.
 - `region` (String) Region where the bucket is located.
+
+<a id="nestedatt--lifecycle_rule"></a>
+### Nested Schema for `lifecycle_rule`
+
+Read-Only:
+
+- `abort_incomplete_multipart` (List of Object) (see [below for nested schema](#nestedobjatt--lifecycle_rule--abort_incomplete_multipart))
+- `disabled` (Boolean)
+- `expire_current_version` (List of Object) (see [below for nested schema](#nestedobjatt--lifecycle_rule--expire_current_version))
+- `expire_non_current_version` (List of Object) (see [below for nested schema](#nestedobjatt--lifecycle_rule--expire_non_current_version))
+- `filter` (List of Object) (see [below for nested schema](#nestedobjatt--lifecycle_rule--filter))
+- `id` (String)
+
+<a id="nestedobjatt--lifecycle_rule--abort_incomplete_multipart"></a>
+### Nested Schema for `lifecycle_rule.abort_incomplete_multipart`
+
+Read-Only:
+
+- `days` (Number)
+
+
+<a id="nestedobjatt--lifecycle_rule--expire_current_version"></a>
+### Nested Schema for `lifecycle_rule.expire_current_version`
+
+Read-Only:
+
+- `date` (String)
+- `days` (Number)
+- `expire_orphaned_deletion_markers` (Boolean)
+
+
+<a id="nestedobjatt--lifecycle_rule--expire_non_current_version"></a>
+### Nested Schema for `lifecycle_rule.expire_non_current_version`
+
+Read-Only:
+
+- `days` (Number)
+- `max_num_versions` (Number)
+
+
+<a id="nestedobjatt--lifecycle_rule--filter"></a>
+### Nested Schema for `lifecycle_rule.filter`
+
+Read-Only:
+
+- `prefix` (String)
+- `size_greater_than` (Number)
+- `size_less_than` (Number)
+- `tag` (List of Object) (see [below for nested schema](#nestedobjatt--lifecycle_rule--filter--tag))
+
+<a id="nestedobjatt--lifecycle_rule--filter--tag"></a>
+### Nested Schema for `lifecycle_rule.filter.tag`
+
+Read-Only:
+
+- `key` (String)
+- `value` (String)
+
+
+
 
 <a id="nestedatt--object_locking"></a>
 ### Nested Schema for `object_locking`
