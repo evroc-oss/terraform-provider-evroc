@@ -64,7 +64,7 @@ func TestResourceSchemas(t *testing.T) {
 			name:           "evroc_bucket",
 			resource:       resourceBucket(),
 			requiredFields: []string{"name"},
-			optionalFields: []string{"object_retention_mode", "object_locking", "region", "user_labels"},
+			optionalFields: []string{"object_retention_mode", "object_locking", "lifecycle_rule", "region", "user_labels"},
 			computedFields: []string{"bucket_id", "system_labels", "created_at"},
 		},
 		{
@@ -454,13 +454,13 @@ func TestProviderSchema(t *testing.T) {
 	}
 
 	// Verify resource count
-	expectedResources := 24
+	expectedResources := 23
 	if len(p.ResourcesMap) != expectedResources {
 		t.Errorf("expected %d resources, got %d", expectedResources, len(p.ResourcesMap))
 	}
 
 	// Verify data source count
-	expectedDataSources := 31
+	expectedDataSources := 30
 	if len(p.DataSourcesMap) != expectedDataSources {
 		t.Errorf("expected %d data sources, got %d", expectedDataSources, len(p.DataSourcesMap))
 	}
@@ -478,7 +478,6 @@ func TestProviderSchema(t *testing.T) {
 		"evroc_project",
 		"evroc_think_instance",
 		"evroc_think_api_key",
-		"evroc_permission_set",
 		"evroc_service_account",
 		"evroc_service_account_credential",
 		"evroc_role_binding",
@@ -510,7 +509,6 @@ func TestProviderSchema(t *testing.T) {
 		"evroc_think_instance",
 		"evroc_think_models",
 		"evroc_think_sizes",
-		"evroc_permission_set",
 		"evroc_service_account",
 		"evroc_service_account_credential",
 		"evroc_roles",
@@ -579,7 +577,7 @@ func TestResourceForceNewFields(t *testing.T) {
 			name:           "evroc_bucket",
 			resource:       resourceBucket(),
 			forceNewFields: []string{"name"},
-			mutableFields:  []string{"object_retention_mode", "user_labels"},
+			mutableFields:  []string{"object_retention_mode", "lifecycle_rule", "user_labels"},
 		},
 		{
 			name:           "evroc_project",
@@ -598,12 +596,6 @@ func TestResourceForceNewFields(t *testing.T) {
 			resource:       resourceThinkAPIKey(),
 			forceNewFields: []string{"name", "expiry"},
 			mutableFields:  []string{},
-		},
-		{
-			name:           "evroc_permission_set",
-			resource:       resourcePermissionSet(),
-			forceNewFields: []string{"name", "project", "email"},
-			mutableFields:  []string{"admin", "user_labels"},
 		},
 		{
 			name:           "evroc_loadbalancer",

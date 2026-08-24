@@ -3,12 +3,12 @@
 page_title: "evroc_compute_profiles Data Source - evroc"
 subcategory: ""
 description: |-
-  Lists all available VM compute profiles (sizes) in the evroc platform. Exposes both lists and individual named attributes for easy reference.
+  Lists the VM compute profiles (sizes) currently available in the evroc platform, queried live from the API. Exposes both lists and individual named attributes for easy reference; a named attribute is empty when that profile is not offered.
 ---
 
 # evroc_compute_profiles (Data Source)
 
-Lists all available VM compute profiles (sizes) in the evroc platform. Exposes both lists and individual named attributes for easy reference.
+Lists the VM compute profiles (sizes) currently available in the evroc platform, queried live from the API. Exposes both lists and individual named attributes for easy reference; a named attribute is empty when that profile is not offered.
 
 
 
@@ -28,6 +28,7 @@ Lists all available VM compute profiles (sizes) in the evroc platform. Exposes b
 - `c1a_m` (String) Compute-optimized medium (c1a.m) profile.
 - `c1a_s` (String) Compute-optimized small (c1a.s) profile.
 - `c1a_xl` (String) Compute-optimized extra-large (c1a.xl) profile.
+- `details` (List of Object) Details for each available compute profile, in the same order as the profiles list. (see [below for nested schema](#nestedatt--details))
 - `gn_b200_l` (String) NVIDIA B200 GPU large (gn-b200.l) profile.
 - `gn_b200_m` (String) NVIDIA B200 GPU medium (gn-b200.m) profile.
 - `gn_b200_s` (String) NVIDIA B200 GPU small (gn-b200.s) profile.
@@ -42,6 +43,21 @@ Lists all available VM compute profiles (sizes) in the evroc platform. Exposes b
 - `m1a_xl` (String) Memory-optimized extra-large (m1a.xl) profile.
 - `profiles` (List of String) List of all available compute profile names.
 - `series` (List of Object) Compute profile series with descriptions. (see [below for nested schema](#nestedatt--series))
+
+<a id="nestedatt--details"></a>
+### Nested Schema for `details`
+
+Read-Only:
+
+- `gpu_local_disk_gb` (Number)
+- `gpu_model` (String)
+- `gpu_quantity` (Number)
+- `memory_amount` (Number)
+- `memory_unit` (String)
+- `name` (String)
+- `processor_architecture` (String)
+- `vcpus` (Number)
+
 
 <a id="nestedatt--series"></a>
 ### Nested Schema for `series`

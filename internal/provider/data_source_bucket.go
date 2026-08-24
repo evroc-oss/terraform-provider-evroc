@@ -53,6 +53,12 @@ func dataSourceBucket() *schema.Resource {
 					},
 				},
 			},
+			"lifecycle_rule": {
+				Type:        schema.TypeList,
+				Computed:    true,
+				Description: "Lifecycle rules that determine how and when objects or object versions are automatically deleted.",
+				Elem:        dataSourceBucketLifecycleRuleSchema(),
+			},
 			"region": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -106,5 +112,34 @@ func dataSourceBucketRead(ctx context.Context, d *schema.ResourceData, meta inte
 		diags = setDiag(d, "object_locking", []interface{}{locking}, diags)
 	}
 
+	diags = setDiag(d, "lifecycle_rule", flattenBucketLifecyclePolicy(bucket.Spec.LifecyclePolicy), diags)
+
 	return diags
+}
+
+// dataSourceBucketLifecycleRuleSchema mirrors bucketLifecycleRuleSchema with all
+// fields computed, since data source attributes are read-only.
+func dataSourceBucketLifecycleRuleSchema() *schema.Resource {
+	return computedSchemaFromResource(bucketLifecycleRuleSchema())
+}
+
+// computedSchemaFromResource converts a resource schema into a read-only variant
+// where every attribute (including nested blocks) is computed.
+func computedSchemaFromResource(r *schema.Resource) *schema.Resource {
+	out := &schema.Resource{Schema: make(map[string]*schema.Schema, len(r.Schema))}
+	for name, s := range r.Schema {
+		cp := *s
+		cp.Required = false
+		cp.Optional = false
+		cp.Computed = true
+		cp.Default = nil
+		cp.ValidateDiagFunc = nil
+		cp.MaxItems = 0
+		cp.MinItems = 0
+		if nested, ok := cp.Elem.(*schema.Resource); ok {
+			cp.Elem = computedSchemaFromResource(nested)
+		}
+		out.Schema[name] = &cp
+	}
+	return out
 }

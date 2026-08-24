@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     evroc = {
-      source  = "github.com/evroc-oss/evroc"
+      source = "github.com/evroc-oss/evroc"
     }
   }
 }
@@ -17,10 +17,38 @@ resource "evroc_bucket" "app_data" {
   object_retention_mode = "Disabled"
 }
 
-# Create a bucket with versioning
+# Create a bucket with versioning and lifecycle rules
 resource "evroc_bucket" "versioned_data" {
   name                  = "versioned-data-bucket"
   object_retention_mode = "Versioned"
+
+  # Expire objects under tmp/ after 30 days
+  lifecycle_rule {
+    id = "expire-tmp"
+
+    expire_current_version {
+      days = 30
+    }
+
+    filter {
+      prefix = "tmp/"
+    }
+  }
+
+  # Keep at most 5 old versions, drop versions older than 90 days,
+  # and abort incomplete multipart uploads after 7 days
+  lifecycle_rule {
+    id = "cleanup-versions"
+
+    expire_non_current_version {
+      days             = 90
+      max_num_versions = 5
+    }
+
+    abort_incomplete_multipart {
+      days = 7
+    }
+  }
 }
 
 # Create a bucket with object locking

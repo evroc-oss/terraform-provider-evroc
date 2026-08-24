@@ -21,6 +21,7 @@ Manages an evroc S3-compatible storage bucket with object retention and locking 
 
 ### Optional
 
+- `lifecycle_rule` (Block List) Lifecycle rules that determine how and when objects or object versions are automatically deleted. (see [below for nested schema](#nestedblock--lifecycle_rule))
 - `object_locking` (Block List, Max: 1) Default object locking configuration. (see [below for nested schema](#nestedblock--object_locking))
 - `object_retention_mode` (String) Object retention mode: Disabled, Versioned, or Locking.
 - `project` (String) Project this resource belongs to. Defaults to the provider project.
@@ -34,6 +35,69 @@ Manages an evroc S3-compatible storage bucket with object retention and locking 
 - `created_at` (String) Timestamp when the bucket was created.
 - `id` (String) The ID of this resource.
 - `system_labels` (Map of String) System-managed labels automatically set by evroc (read-only).
+
+<a id="nestedblock--lifecycle_rule"></a>
+### Nested Schema for `lifecycle_rule`
+
+Required:
+
+- `id` (String) Unique identifier for the lifecycle rule.
+
+Optional:
+
+- `abort_incomplete_multipart` (Block List, Max: 1) Aborts in-progress multipart uploads. (see [below for nested schema](#nestedblock--lifecycle_rule--abort_incomplete_multipart))
+- `disabled` (Boolean) Whether the rule is excluded from lifecycle evaluation.
+- `expire_current_version` (Block List, Max: 1) Deletes the object in a non-versioned bucket, or adds a deletion marker in a versioned bucket. (see [below for nested schema](#nestedblock--lifecycle_rule--expire_current_version))
+- `expire_non_current_version` (Block List, Max: 1) Removes old versions of an object. (see [below for nested schema](#nestedblock--lifecycle_rule--expire_non_current_version))
+- `filter` (Block List, Max: 1) Filters that determine which objects the rule applies to. If omitted, the rule applies to all objects. Multiple filter properties are ANDed together. (see [below for nested schema](#nestedblock--lifecycle_rule--filter))
+
+<a id="nestedblock--lifecycle_rule--abort_incomplete_multipart"></a>
+### Nested Schema for `lifecycle_rule.abort_incomplete_multipart`
+
+Required:
+
+- `days` (Number) Number of days after which an incomplete multipart upload is aborted.
+
+
+<a id="nestedblock--lifecycle_rule--expire_current_version"></a>
+### Nested Schema for `lifecycle_rule.expire_current_version`
+
+Optional:
+
+- `date` (String) Date (RFC3339) on which the current version of an object expires.
+- `days` (Number) Number of days after which the current version of an object expires.
+- `expire_orphaned_deletion_markers` (Boolean) Whether orphaned deletion markers are expired.
+
+
+<a id="nestedblock--lifecycle_rule--expire_non_current_version"></a>
+### Nested Schema for `lifecycle_rule.expire_non_current_version`
+
+Optional:
+
+- `days` (Number) Number of days after which a non-current version of an object expires.
+- `max_num_versions` (Number) Maximum number of non-current versions to retain.
+
+
+<a id="nestedblock--lifecycle_rule--filter"></a>
+### Nested Schema for `lifecycle_rule.filter`
+
+Optional:
+
+- `prefix` (String) Key prefix that objects must match for the rule to apply.
+- `size_greater_than` (Number) Minimum object size (in bytes) for the rule to apply.
+- `size_less_than` (Number) Maximum object size (in bytes) for the rule to apply.
+- `tag` (Block List) Key-value tags that objects must have for the rule to apply. (see [below for nested schema](#nestedblock--lifecycle_rule--filter--tag))
+
+<a id="nestedblock--lifecycle_rule--filter--tag"></a>
+### Nested Schema for `lifecycle_rule.filter.tag`
+
+Required:
+
+- `key` (String) Tag key that objects must have for the rule to apply.
+- `value` (String) Tag value that objects must have for the rule to apply.
+
+
+
 
 <a id="nestedblock--object_locking"></a>
 ### Nested Schema for `object_locking`

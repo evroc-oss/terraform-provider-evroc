@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-18
+
+### Added
+- `evroc_bucket`: lifecycle policy support via `lifecycle_rule` blocks — expire current/non-current object versions, abort incomplete multipart uploads, and filter by prefix, size, or tags
+
+### Changed
+- `evroc_disk_images` and `evroc_compute_profiles` data sources now query the platform API instead of returning a hardcoded list, so they reflect the images and profiles actually offered. Named convenience attributes (e.g. `ubuntu_minimal_24_04_1`, `a1a_s`) are unchanged but are now empty when the platform does not offer that image or profile; newly offered entries without a named attribute appear in the `images`/`profiles` lists
+- `evroc_disk_images` and `evroc_compute_profiles` expose a new computed `details` list with the live catalog data: OS image/version, architecture, and default disk size per image; vCPUs, memory, architecture, and GPU model/quantity/local disk per profile
+
+### Breaking Changes
+- Removed `evroc_permission_set` resource and data source — the PermissionSets API was removed upstream in favor of role bindings. Use `evroc_role_binding` (or `evroc_org_role_binding`) instead
+
+### Dependencies
+- evroc Go SDK v0.8.0
+
 ## [0.7.2] - 2026-07-16
 
 ### Changed
