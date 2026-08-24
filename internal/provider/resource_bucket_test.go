@@ -92,3 +92,90 @@ resource "evroc_bucket" "test" {
 }
 `, name)
 }
+
+func TestAccEvrocBucket_LifecycleRules(t *testing.T) {
+	resourceName := "evroc_bucket.test"
+	bucketName := fmt.Sprintf("tf-test-bucket-lc-%d", time.Now().Unix())
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactories,
+		CheckDestroy:      testAccCheckEvrocBucketDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEvrocBucketConfig_lifecycle(bucketName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEvrocBucketExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "lifecycle_rule.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "lifecycle_rule.0.id", "expire-tmp"),
+					resource.TestCheckResourceAttr(resourceName, "lifecycle_rule.0.expire_current_version.0.days", "30"),
+					resource.TestCheckResourceAttr(resourceName, "lifecycle_rule.0.filter.0.prefix", "tmp/"),
+					resource.TestCheckResourceAttr(resourceName, "lifecycle_rule.1.id", "cleanup-multipart"),
+					resource.TestCheckResourceAttr(resourceName, "lifecycle_rule.1.abort_incomplete_multipart.0.days", "7"),
+				),
+			},
+			{
+				// Update: drop the second rule and change the first
+				Config: testAccEvrocBucketConfig_lifecycleUpdated(bucketName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEvrocBucketExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "lifecycle_rule.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "lifecycle_rule.0.expire_current_version.0.days", "60"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func testAccEvrocBucketConfig_lifecycle(name string) string {
+	return fmt.Sprintf(`
+resource "evroc_bucket" "test" {
+  name = "%s"
+
+  lifecycle_rule {
+    id = "expire-tmp"
+
+    expire_current_version {
+      days = 30
+    }
+
+    filter {
+      prefix = "tmp/"
+    }
+  }
+
+  lifecycle_rule {
+    id = "cleanup-multipart"
+
+    abort_incomplete_multipart {
+      days = 7
+    }
+  }
+}
+`, name)
+}
+
+func testAccEvrocBucketConfig_lifecycleUpdated(name string) string {
+	return fmt.Sprintf(`
+resource "evroc_bucket" "test" {
+  name = "%s"
+
+  lifecycle_rule {
+    id = "expire-tmp"
+
+    expire_current_version {
+      days = 60
+    }
+
+    filter {
+      prefix = "tmp/"
+    }
+  }
+}
+`, name)
+}

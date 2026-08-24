@@ -10,8 +10,8 @@ terraform {
 # This is the "bootstrap" project — you must have access to at least one project.
 provider "evroc" {}
 
-variable "admin_email" {
-  description = "Email of the user to grant admin access on the new project"
+variable "admin_user_id" {
+  description = "UUID of the user to grant owner access on the new project (find yours with the evroc CLI or console)"
   type        = string
 }
 
@@ -23,25 +23,28 @@ resource "evroc_project" "app" {
   display_name = "My Application"
 }
 
-# --- Step 2: Grant yourself admin access on the new project ---
+# --- Step 2: Grant yourself owner access on the new project ---
 # Without this, all resource operations on the new project will return 403.
 
-resource "evroc_permission_set" "admin" {
-  name    = "admin-access"
-  project = evroc_project.app.name
-  email   = var.admin_email
-  admin   = true
+resource "evroc_role_binding" "admin" {
+  name      = "u-${var.admin_user_id}"
+  project   = evroc_project.app.name
+  principal = "/iam/users/${var.admin_user_id}"
+
+  roles {
+    role = "projectOwner"
+  }
 }
 
 # --- Step 3: Create resources in the new project ---
-# These depend on the permission set so Terraform waits for access to be granted.
+# These depend on the role binding so Terraform waits for access to be granted.
 
 data "evroc_disk_images" "available" {
-  depends_on = [evroc_permission_set.admin]
+  depends_on = [evroc_role_binding.admin]
 }
 
 data "evroc_compute_profiles" "available" {
-  depends_on = [evroc_permission_set.admin]
+  depends_on = [evroc_role_binding.admin]
 }
 
 resource "evroc_disk" "boot" {
@@ -51,14 +54,14 @@ resource "evroc_disk" "boot" {
   image   = data.evroc_disk_images.available.ubuntu_minimal_24_04_1
   zone    = "a"
 
-  depends_on = [evroc_permission_set.admin]
+  depends_on = [evroc_role_binding.admin]
 }
 
 resource "evroc_public_ip" "app" {
   project = evroc_project.app.name
   name    = "app-public-ip"
 
-  depends_on = [evroc_permission_set.admin]
+  depends_on = [evroc_role_binding.admin]
 }
 
 resource "evroc_security_group" "app" {
@@ -81,7 +84,7 @@ resource "evroc_security_group" "app" {
     remote_ip = "0.0.0.0/0"
   }
 
-  depends_on = [evroc_permission_set.admin]
+  depends_on = [evroc_role_binding.admin]
 }
 
 resource "evroc_virtual_machine" "app" {

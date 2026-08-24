@@ -341,18 +341,6 @@ func BuildThinkAPIKeyCreateRequest(name, expiryStr string) (*thinktypes.ApikeyRe
 	return builder.Build(), nil
 }
 
-// BuildPermissionSetCreateRequest creates a properly formatted PermissionSet request using SDK builder
-func BuildPermissionSetCreateRequest(name, project, email string, admin bool, userLabels map[string]string) *iamtypes.PermissionSetRequest {
-	builder := iam.NewPermissionSetBuilder(name, project, email).
-		WithAdmin(admin)
-
-	if len(userLabels) > 0 {
-		builder = builder.WithLabels(userLabels)
-	}
-
-	return builder.Build()
-}
-
 // BuildProjectCreateRequest creates a properly formatted Project request using SDK builder
 func BuildProjectCreateRequest(name, organization, displayName string, userLabels map[string]string) (*iamtypes.ProjectRequest, error) {
 	builder := iam.NewProjectBuilder(name, organization)

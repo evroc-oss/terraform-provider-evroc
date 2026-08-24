@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	storagetypes "github.com/evroc-oss/evroc-go-sdk/types/storage"
@@ -73,6 +74,12 @@ func resourceBucket() *schema.Resource {
 						},
 					},
 				},
+			},
+			"lifecycle_rule": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "Lifecycle rules that determine how and when objects or object versions are automatically deleted.",
+				Elem:        bucketLifecycleRuleSchema(),
 			},
 			"region": {
 				Type:        schema.TypeString,
@@ -145,6 +152,12 @@ func resourceBucketCreate(ctx context.Context, d *schema.ResourceData, meta inte
 
 	req := BuildBucketCreateRequest(name, retentionMode, lockingMode, lockingDuration, userLabels)
 
+	lifecyclePolicy, err := expandBucketLifecyclePolicy(d.Get("lifecycle_rule").([]interface{}))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	req.Spec.LifecyclePolicy = lifecyclePolicy
+
 	bucket, err := client.Storage().Buckets().Create(ctx, req)
 	if err != nil {
 		return diag.Errorf("error creating bucket: %s", err)
@@ -204,6 +217,8 @@ func resourceBucketRead(ctx context.Context, d *schema.ResourceData, meta interf
 		diags = setDiag(d, "object_locking", []interface{}{locking}, diags)
 	}
 
+	diags = setDiag(d, "lifecycle_rule", flattenBucketLifecyclePolicy(bucket.Spec.LifecyclePolicy), diags)
+
 	if bucket.Metadata.UserLabels != nil && len(*bucket.Metadata.UserLabels) > 0 {
 		diags = setDiag(d, "user_labels", flattenLabels(bucket.Metadata.UserLabels), diags)
 	}
@@ -221,7 +236,7 @@ func resourceBucketUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 		return diags
 	}
 
-	if d.HasChanges("object_retention_mode", "object_locking", "user_labels") {
+	if d.HasChanges("object_retention_mode", "object_locking", "lifecycle_rule", "user_labels") {
 		// Get the current bucket
 		bucket, err := client.Storage().Buckets().Get(ctx, d.Id())
 		if err != nil {
@@ -250,6 +265,14 @@ func resourceBucketUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 			} else {
 				bucket.Spec.DefaultObjectLocking = nil
 			}
+		}
+
+		if d.HasChange("lifecycle_rule") {
+			lifecyclePolicy, err := expandBucketLifecyclePolicy(d.Get("lifecycle_rule").([]interface{}))
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			bucket.Spec.LifecyclePolicy = lifecyclePolicy
 		}
 
 		// Update user labels
@@ -298,4 +321,334 @@ func resourceBucketDelete(ctx context.Context, d *schema.ResourceData, meta inte
 
 	d.SetId("")
 	return nil
+}
+
+// bucketLifecycleRule and bucketLifecycleTag alias the anonymous struct types
+// used by the generated SDK for lifecycle policy rules and filter tags, so they
+// can be constructed outside the SDK package.
+type bucketLifecycleRule = struct {
+	AbortIncompleteMultipart *storagetypes.BucketSpecLifecyclePolicyAbortIncompleteMultipart `json:"abortIncompleteMultipart,omitempty"`
+	Disabled                 *bool                                                           `json:"disabled,omitempty"`
+	ExpireCurrentVersion     *storagetypes.BucketSpecLifecyclePolicyExpireCurrentVersion     `json:"expireCurrentVersion,omitempty"`
+	ExpireNonCurrentVersion  *storagetypes.BucketSpecLifecyclePolicyExpireNonCurrentVersion  `json:"expireNonCurrentVersion,omitempty"`
+	Filter                   *storagetypes.BucketSpecLifecyclePolicyFilter                   `json:"filter,omitempty"`
+	Id                       string                                                          `json:"id"` //nolint:staticcheck // must be "Id" for type identity with the generated SDK struct
+}
+
+type bucketLifecycleTag = struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+func bucketLifecycleRuleSchema() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"id": {
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "Unique identifier for the lifecycle rule.",
+			},
+			"disabled": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Whether the rule is excluded from lifecycle evaluation.",
+			},
+			"expire_current_version": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				MaxItems:    1,
+				Description: "Deletes the object in a non-versioned bucket, or adds a deletion marker in a versioned bucket.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"days": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "Number of days after which the current version of an object expires.",
+						},
+						"date": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Date (RFC3339) on which the current version of an object expires.",
+						},
+						"expire_orphaned_deletion_markers": {
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     false,
+							Description: "Whether orphaned deletion markers are expired.",
+						},
+					},
+				},
+			},
+			"expire_non_current_version": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				MaxItems:    1,
+				Description: "Removes old versions of an object.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"days": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "Number of days after which a non-current version of an object expires.",
+						},
+						"max_num_versions": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "Maximum number of non-current versions to retain.",
+						},
+					},
+				},
+			},
+			"abort_incomplete_multipart": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				MaxItems:    1,
+				Description: "Aborts in-progress multipart uploads.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"days": {
+							Type:             schema.TypeInt,
+							Required:         true,
+							ValidateDiagFunc: validatePositiveInt(),
+							Description:      "Number of days after which an incomplete multipart upload is aborted.",
+						},
+					},
+				},
+			},
+			"filter": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Description: "Filters that determine which objects the rule applies to. If omitted, the rule applies to all objects. " +
+					"Multiple filter properties are ANDed together.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"prefix": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Key prefix that objects must match for the rule to apply.",
+						},
+						"size_greater_than": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "Minimum object size (in bytes) for the rule to apply.",
+						},
+						"size_less_than": {
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Description: "Maximum object size (in bytes) for the rule to apply.",
+						},
+						"tag": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: "Key-value tags that objects must have for the rule to apply.",
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"key": {
+										Type:        schema.TypeString,
+										Required:    true,
+										Description: "Tag key that objects must have for the rule to apply.",
+									},
+									"value": {
+										Type:        schema.TypeString,
+										Required:    true,
+										Description: "Tag value that objects must have for the rule to apply.",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// firstBlock returns the map of the first entry of a MaxItems:1 nested block, or nil if unset.
+func firstBlock(m map[string]interface{}, key string) map[string]interface{} {
+	blocks, ok := m[key].([]interface{})
+	if !ok || len(blocks) == 0 || blocks[0] == nil {
+		return nil
+	}
+	return blocks[0].(map[string]interface{})
+}
+
+func expandBucketLifecyclePolicy(rules []interface{}) (*storagetypes.BucketSpecLifecyclePolicy, error) {
+	if len(rules) == 0 {
+		return nil, nil
+	}
+
+	policy := &storagetypes.BucketSpecLifecyclePolicy{}
+	for _, r := range rules {
+		m, ok := r.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		rule := bucketLifecycleRule{Id: m["id"].(string)}
+
+		if v, ok := m["disabled"].(bool); ok && v {
+			disabled := v
+			rule.Disabled = &disabled
+		}
+
+		ecv, err := expandLifecycleExpireCurrentVersion(firstBlock(m, "expire_current_version"), rule.Id)
+		if err != nil {
+			return nil, err
+		}
+		rule.ExpireCurrentVersion = ecv
+		rule.ExpireNonCurrentVersion = expandLifecycleExpireNonCurrentVersion(firstBlock(m, "expire_non_current_version"))
+		rule.Filter = expandLifecycleFilter(firstBlock(m, "filter"))
+
+		if b := firstBlock(m, "abort_incomplete_multipart"); b != nil {
+			rule.AbortIncompleteMultipart = &storagetypes.BucketSpecLifecyclePolicyAbortIncompleteMultipart{
+				Days: int32(b["days"].(int)),
+			}
+		}
+
+		policy.Rules = append(policy.Rules, rule)
+	}
+
+	return policy, nil
+}
+
+func expandLifecycleExpireCurrentVersion(b map[string]interface{}, ruleID string) (*storagetypes.BucketSpecLifecyclePolicyExpireCurrentVersion, error) {
+	if b == nil {
+		return nil, nil
+	}
+	ecv := &storagetypes.BucketSpecLifecyclePolicyExpireCurrentVersion{}
+	if days, ok := b["days"].(int); ok && days > 0 {
+		d := int32(days)
+		ecv.Days = &d
+	}
+	if dateStr, ok := b["date"].(string); ok && dateStr != "" {
+		date, err := time.Parse(time.RFC3339, dateStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid date %q in lifecycle rule %q: %w", dateStr, ruleID, err)
+		}
+		ecv.Date = &date
+	}
+	if v, ok := b["expire_orphaned_deletion_markers"].(bool); ok && v {
+		markers := v
+		ecv.ExpireOrphanedDeletionMarkers = &markers
+	}
+	return ecv, nil
+}
+
+func expandLifecycleExpireNonCurrentVersion(b map[string]interface{}) *storagetypes.BucketSpecLifecyclePolicyExpireNonCurrentVersion {
+	if b == nil {
+		return nil
+	}
+	encv := &storagetypes.BucketSpecLifecyclePolicyExpireNonCurrentVersion{}
+	if days, ok := b["days"].(int); ok && days > 0 {
+		d := int32(days)
+		encv.Days = &d
+	}
+	if maxVersions, ok := b["max_num_versions"].(int); ok && maxVersions > 0 {
+		mv := int32(maxVersions)
+		encv.MaxNumVersions = &mv
+	}
+	return encv
+}
+
+func expandLifecycleFilter(b map[string]interface{}) *storagetypes.BucketSpecLifecyclePolicyFilter {
+	if b == nil {
+		return nil
+	}
+	filter := &storagetypes.BucketSpecLifecyclePolicyFilter{}
+	if prefix, ok := b["prefix"].(string); ok && prefix != "" {
+		filter.Prefix = &prefix
+	}
+	if size, ok := b["size_greater_than"].(int); ok && size > 0 {
+		s := int64(size)
+		filter.SizeGreaterThan = &s
+	}
+	if size, ok := b["size_less_than"].(int); ok && size > 0 {
+		s := int64(size)
+		filter.SizeLessThan = &s
+	}
+	if tags, ok := b["tag"].([]interface{}); ok && len(tags) > 0 {
+		tagList := make([]bucketLifecycleTag, 0, len(tags))
+		for _, t := range tags {
+			tm := t.(map[string]interface{})
+			tagList = append(tagList, bucketLifecycleTag{
+				Key:   tm["key"].(string),
+				Value: tm["value"].(string),
+			})
+		}
+		filter.Tag = &tagList
+	}
+	return filter
+}
+
+func flattenBucketLifecyclePolicy(policy *storagetypes.BucketSpecLifecyclePolicy) []interface{} {
+	if policy == nil || len(policy.Rules) == 0 {
+		return nil
+	}
+
+	rules := make([]interface{}, 0, len(policy.Rules))
+	for _, rule := range policy.Rules {
+		m := map[string]interface{}{
+			"id":       rule.Id,
+			"disabled": rule.Disabled != nil && *rule.Disabled,
+		}
+
+		if ecv := rule.ExpireCurrentVersion; ecv != nil {
+			b := map[string]interface{}{}
+			if ecv.Days != nil {
+				b["days"] = int(*ecv.Days)
+			}
+			if ecv.Date != nil {
+				b["date"] = ecv.Date.Format(time.RFC3339)
+			}
+			b["expire_orphaned_deletion_markers"] = ecv.ExpireOrphanedDeletionMarkers != nil && *ecv.ExpireOrphanedDeletionMarkers
+			m["expire_current_version"] = []interface{}{b}
+		}
+
+		if encv := rule.ExpireNonCurrentVersion; encv != nil {
+			b := map[string]interface{}{}
+			if encv.Days != nil {
+				b["days"] = int(*encv.Days)
+			}
+			if encv.MaxNumVersions != nil {
+				b["max_num_versions"] = int(*encv.MaxNumVersions)
+			}
+			m["expire_non_current_version"] = []interface{}{b}
+		}
+
+		if rule.AbortIncompleteMultipart != nil {
+			m["abort_incomplete_multipart"] = []interface{}{map[string]interface{}{
+				"days": int(rule.AbortIncompleteMultipart.Days),
+			}}
+		}
+
+		if filter := rule.Filter; filter != nil {
+			b := map[string]interface{}{}
+			if filter.Prefix != nil {
+				b["prefix"] = *filter.Prefix
+			}
+			if filter.SizeGreaterThan != nil {
+				b["size_greater_than"] = int(*filter.SizeGreaterThan)
+			}
+			if filter.SizeLessThan != nil {
+				b["size_less_than"] = int(*filter.SizeLessThan)
+			}
+			if filter.Tag != nil && len(*filter.Tag) > 0 {
+				tags := make([]interface{}, 0, len(*filter.Tag))
+				for _, t := range *filter.Tag {
+					tags = append(tags, map[string]interface{}{
+						"key":   t.Key,
+						"value": t.Value,
+					})
+				}
+				b["tag"] = tags
+			}
+			m["filter"] = []interface{}{b}
+		}
+
+		rules = append(rules, m)
+	}
+
+	return rules
 }

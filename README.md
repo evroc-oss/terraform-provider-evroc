@@ -33,7 +33,7 @@ Declaratively manage your evroc cloud infrastructure — provision VMs, configur
 | **Compute** | Virtual machines, disks, disk attachments, placement groups |
 | **Networking** | Public IPs, security groups |
 | **Storage** | S3-compatible buckets and service accounts |
-| **IAM** | Projects, permission sets, service accounts, role bindings |
+| **IAM** | Projects, service accounts, role bindings |
 
 ## Requirements
 
@@ -517,7 +517,6 @@ Then omit `access_key` and `secret_key` from the backend block.
 | `evroc_bucket` | S3-compatible object storage |
 | `evroc_bucket_service_account` | S3 access credentials |
 | `evroc_project` | Project management |
-| `evroc_permission_set` | IAM permission sets |
 | `evroc_loadbalancer` | Layer 4 (TCP) load balancer with backend pool |
 | `evroc_service_account` | IAM service accounts for programmatic API access |
 | `evroc_service_account_credential` | Credentials (JWK key pairs) for service accounts |
@@ -539,7 +538,6 @@ Then omit `access_key` and `secret_key` from the backend block.
 | `evroc_bucket_service_account` | Look up existing bucket service accounts |
 | `evroc_bucket_service_account_secret` | Retrieve S3 credentials for a bucket service account |
 | `evroc_project` | Look up existing projects |
-| `evroc_permission_set` | Look up existing permission sets |
 | `evroc_loadbalancer` | Look up existing load balancers |
 | `evroc_service_account` | Look up existing IAM service accounts |
 | `evroc_service_account_credential` | Look up existing service account credentials |
