@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-04
+
+### Changed
+- `evroc_role_binding` and `evroc_org_role_binding`: `name` is now derived automatically from `principal` (u-{user uuid} for users, sa-{project}.{service account name} for service accounts), matching the naming convention IAM now enforces server-side. `name` stays settable in config for backward compatibility, but any value is ignored — remove it at your convenience, it is no longer required
+
+### Fixed
+- `evroc_role_binding` and `evroc_org_role_binding`: Read/Update/Delete now fall back to the principal-derived name if the stored id 404s (e.g. after an IAM-side rename to the derived convention), instead of treating the resource as deleted
+
 ## [0.8.0] - 2026-08-18
 
 ### Added
@@ -183,7 +191,7 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.0...HEAD
 [0.7.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.1
 [0.5.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.5.1
 [0.4.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.2
@@ -193,3 +201,4 @@ Initial public release of the evroc Terraform Provider.
 [0.5.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.5.0
 [0.7.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.0
 [0.7.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.2
+[0.9.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.0

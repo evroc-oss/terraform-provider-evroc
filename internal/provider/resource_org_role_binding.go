@@ -7,6 +7,8 @@ import (
 	"context"
 	"time"
 
+	evroc "github.com/evroc-oss/evroc-go-sdk"
+	evrociam "github.com/evroc-oss/evroc-go-sdk/iam"
 	iamtypes "github.com/evroc-oss/evroc-go-sdk/types/iam"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -33,13 +35,6 @@ func resourceOrgRoleBinding() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-				Description: "Unique identifier for the role binding. Any name is accepted, but by convention names follow " +
-					"u-{user uuid} for users and sa-{project}-{service account name} for service accounts.",
-			},
 			"principal": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -74,6 +69,17 @@ func resourceOrgRoleBinding() *schema.Resource {
 				},
 			},
 			// Computed
+			"name": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				Deprecated:       "Remove name from the configuration. Role binding names are derived from principal, and configured values are ignored.",
+				DiffSuppressFunc: suppressDerivedNameDiff,
+				Description: "Unique identifier for the role binding, derived automatically from principal: " +
+					"u-{user uuid} for users, sa-{project}.{service account name} for service accounts. " +
+					"Any value set here is ignored; kept settable only for backward compatibility with " +
+					"configs written before this was derived.",
+			},
 			"uid": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -103,8 +109,11 @@ func resolveOrganization(d *schema.ResourceData, config *ProviderConfig) string 
 func resourceOrgRoleBindingCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	config := meta.(*ProviderConfig)
 
-	name := d.Get("name").(string)
 	principal := d.Get("principal").(string)
+	name, err := evrociam.DeriveRoleBindingName(principal)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	roles := expandRoleEntries(d.Get("roles").([]interface{}))
 	org := resolveOrganization(d, config)
 
@@ -144,11 +153,41 @@ func resourceOrgRoleBindingCreate(ctx context.Context, d *schema.ResourceData, m
 	return resourceOrgRoleBindingRead(ctx, d, meta)
 }
 
+// getOrgRoleBindingWithFallback mirrors getRoleBindingWithFallback (see
+// resource_role_binding.go) for the organization-scoped resource.
+func getOrgRoleBindingWithFallback(
+	ctx context.Context, client *evroc.Client, d *schema.ResourceData,
+) (*iamtypes.OrgResponse, error) {
+	rb, err := client.IAM().RoleBindings().GetOrgRoleBinding(ctx, d.Id())
+	if err == nil {
+		return rb, nil
+	}
+	if !isNotFoundError(err) {
+		return nil, err
+	}
+
+	principal, ok := d.Get("principal").(string)
+	if !ok || principal == "" {
+		return nil, err
+	}
+	derived, derr := evrociam.DeriveRoleBindingName(principal)
+	if derr != nil || derived == d.Id() {
+		return nil, err
+	}
+
+	rb, rerr := client.IAM().RoleBindings().GetOrgRoleBinding(ctx, derived)
+	if rerr != nil {
+		return nil, err // report the original 404, not the fallback's
+	}
+	d.SetId(derived)
+	return rb, nil
+}
+
 func resourceOrgRoleBindingRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	config := meta.(*ProviderConfig)
 	var diags diag.Diagnostics
 
-	rb, err := config.Client.IAM().RoleBindings().GetOrgRoleBinding(ctx, d.Id())
+	rb, err := getOrgRoleBindingWithFallback(ctx, config.Client, d)
 	if err != nil {
 		if isNotFoundError(err) {
 			d.SetId("")
@@ -179,7 +218,7 @@ func resourceOrgRoleBindingUpdate(ctx context.Context, d *schema.ResourceData, m
 	config := meta.(*ProviderConfig)
 
 	if d.HasChanges("roles", "display_name", "user_labels") {
-		rb, err := config.Client.IAM().RoleBindings().GetOrgRoleBinding(ctx, d.Id())
+		rb, err := getOrgRoleBindingWithFallback(ctx, config.Client, d)
 		if err != nil {
 			return diag.Errorf("error reading org role binding %s for update: %s", d.Id(), err)
 		}
@@ -226,6 +265,13 @@ func resourceOrgRoleBindingUpdate(ctx context.Context, d *schema.ResourceData, m
 
 func resourceOrgRoleBindingDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	config := meta.(*ProviderConfig)
+
+	// Resolve a stale id (e.g. renamed by IAM's migration) before deleting, so
+	// destroy doesn't silently no-op on the old id while a live binding for
+	// the same principal remains under the derived name.
+	if _, err := getOrgRoleBindingWithFallback(ctx, config.Client, d); err != nil && !isNotFoundError(err) {
+		return diag.Errorf("error reading org role binding %s for delete: %s", d.Id(), err)
+	}
 
 	err := config.Client.IAM().RoleBindings().DeleteOrgRoleBinding(ctx, d.Id())
 	if err != nil {

@@ -17,7 +17,6 @@ Manages an organization-scoped IAM role binding. A role binding grants one or mo
 
 ### Required
 
-- `name` (String) Unique identifier for the role binding. Any name is accepted, but by convention names follow u-{user uuid} for users and sa-{project}-{service account name} for service accounts.
 - `principal` (String) Principal FQID (e.g., /iam/users/<uuid> or /iam/projects/<project>/serviceAccounts/<name>).
 - `roles` (Block List, Min: 1) Roles granted to the principal at organization scope. (see [below for nested schema](#nestedblock--roles))
 
@@ -32,6 +31,7 @@ Manages an organization-scoped IAM role binding. A role binding grants one or mo
 
 - `created_at` (String) Timestamp when the role binding was created (RFC3339 format).
 - `id` (String) The ID of this resource.
+- `name` (String) Unique identifier for the role binding, derived automatically from principal: u-{user uuid} for users, sa-{project}.{service account name} for service accounts.
 - `uid` (String) System-assigned unique identifier (UUID) of the role binding.
 
 <a id="nestedblock--roles"></a>

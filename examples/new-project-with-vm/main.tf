@@ -27,12 +27,11 @@ resource "evroc_project" "app" {
 # Without this, all resource operations on the new project will return 403.
 
 resource "evroc_role_binding" "admin" {
-  name      = "u-${var.admin_user_id}"
   project   = evroc_project.app.name
   principal = "/iam/users/${var.admin_user_id}"
 
   roles {
-    role = "projectOwner"
+    role = "/iam/roles/projectOwner"
   }
 }
 

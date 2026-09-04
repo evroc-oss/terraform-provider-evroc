@@ -50,25 +50,27 @@ resource "evroc_service_account" "monitoring" {
 # ---------------------------------------------------------------------------
 
 # CI/CD: full infrastructure management (compute, disks, networking, storage)
-resource "evroc_role_binding" "cicd_infra" {
+resource "evroc_role_binding" "cicd" {
   principal = evroc_service_account.cicd.fqid
-  role      = "cicdInfrastructureManager"
-}
 
-resource "evroc_role_binding" "cicd_lb" {
-  principal = evroc_service_account.cicd.fqid
-  role      = "loadBalancerOperator"
+  roles {
+    role = "/iam/roles/cicdInfrastructureManager"
+  }
+  roles {
+    role = "/iam/roles/loadBalancerOperator"
+  }
 }
 
 # Monitoring: read-only access to observe resources
-resource "evroc_role_binding" "monitoring_compute" {
+resource "evroc_role_binding" "monitoring" {
   principal = evroc_service_account.monitoring.fqid
-  role      = "computeViewer"
-}
 
-resource "evroc_role_binding" "monitoring_networking" {
-  principal = evroc_service_account.monitoring.fqid
-  role      = "networkingViewer"
+  roles {
+    role = "/iam/roles/computeViewer"
+  }
+  roles {
+    role = "/iam/roles/networkingViewer"
+  }
 }
 
 # ---------------------------------------------------------------------------
