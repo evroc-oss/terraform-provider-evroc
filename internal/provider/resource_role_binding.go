@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	evroc "github.com/evroc-oss/evroc-go-sdk"
+	evrociam "github.com/evroc-oss/evroc-go-sdk/iam"
 	iamtypes "github.com/evroc-oss/evroc-go-sdk/types/iam"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -28,6 +30,14 @@ func normalizeRoleFQID(role string) string {
 
 func suppressRoleFQIDDiff(_, old, new string, _ *schema.ResourceData) bool {
 	return normalizeRoleFQID(old) == normalizeRoleFQID(new)
+}
+
+// suppressDerivedNameDiff always suppresses the diff on "name": the value is
+// derived server-side from "principal" and any caller-supplied value is
+// ignored, so a stale config value (from before "name" was Required) must
+// never show as drift.
+func suppressDerivedNameDiff(_, _, _ string, _ *schema.ResourceData) bool {
+	return true
 }
 
 func roleEntrySchema() *schema.Resource {
@@ -73,13 +83,6 @@ func resourceRoleBinding() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-				Description: "Unique identifier for the role binding. Any name is accepted, but by convention names follow " +
-					"u-{user uuid} for users and sa-{project}-{service account name} for service accounts.",
-			},
 			"principal": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -114,6 +117,17 @@ func resourceRoleBinding() *schema.Resource {
 				},
 			},
 			// Computed
+			"name": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				Deprecated:       "Remove name from the configuration. Role binding names are derived from principal, and configured values are ignored.",
+				DiffSuppressFunc: suppressDerivedNameDiff,
+				Description: "Unique identifier for the role binding, derived automatically from principal: " +
+					"u-{user uuid} for users, sa-{project}.{service account name} for service accounts. " +
+					"Any value set here is ignored; kept settable only for backward compatibility with " +
+					"configs written before this was derived.",
+			},
 			"uid": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -171,8 +185,11 @@ func resourceRoleBindingCreate(ctx context.Context, d *schema.ResourceData, meta
 		return clientDiags
 	}
 
-	name := d.Get("name").(string)
 	principal := d.Get("principal").(string)
+	name, err := evrociam.DeriveRoleBindingName(principal)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	roles := expandRoleEntries(d.Get("roles").([]interface{}))
 	project := resolveProject(d, config)
 
@@ -212,6 +229,41 @@ func resourceRoleBindingCreate(ctx context.Context, d *schema.ResourceData, meta
 	return resourceRoleBindingRead(ctx, d, meta)
 }
 
+// getRoleBindingWithFallback looks up the role binding at d.Id(). If that id
+// is gone (e.g. IAM's own migration renamed the underlying object to the
+// derived id after this resource was created under an arbitrary name), it
+// retries once under the name derived from the stored principal and, if
+// found there, repoints d's id at it — so a server-side rename doesn't look
+// like deletion (which would otherwise make Terraform plan a re-create that
+// then 409s, since a binding for that principal already exists).
+func getRoleBindingWithFallback(
+	ctx context.Context, client *evroc.Client, d *schema.ResourceData,
+) (*iamtypes.Rolebinding, error) {
+	rb, err := client.IAM().RoleBindings().GetProjectRoleBinding(ctx, d.Id())
+	if err == nil {
+		return rb, nil
+	}
+	if !isNotFoundError(err) {
+		return nil, err
+	}
+
+	principal, ok := d.Get("principal").(string)
+	if !ok || principal == "" {
+		return nil, err
+	}
+	derived, derr := evrociam.DeriveRoleBindingName(principal)
+	if derr != nil || derived == d.Id() {
+		return nil, err
+	}
+
+	rb, rerr := client.IAM().RoleBindings().GetProjectRoleBinding(ctx, derived)
+	if rerr != nil {
+		return nil, err // report the original 404, not the fallback's
+	}
+	d.SetId(derived)
+	return rb, nil
+}
+
 func resourceRoleBindingRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	config := meta.(*ProviderConfig)
 	var diags diag.Diagnostics
@@ -221,7 +273,7 @@ func resourceRoleBindingRead(ctx context.Context, d *schema.ResourceData, meta i
 		return clientDiags
 	}
 
-	rb, err := client.IAM().RoleBindings().GetProjectRoleBinding(ctx, d.Id())
+	rb, err := getRoleBindingWithFallback(ctx, client, d)
 	if err != nil {
 		if isNotFoundError(err) {
 			d.SetId("")
@@ -257,7 +309,7 @@ func resourceRoleBindingUpdate(ctx context.Context, d *schema.ResourceData, meta
 	}
 
 	if d.HasChanges("roles", "display_name", "user_labels") {
-		rb, err := client.IAM().RoleBindings().GetProjectRoleBinding(ctx, d.Id())
+		rb, err := getRoleBindingWithFallback(ctx, client, d)
 		if err != nil {
 			return diag.Errorf("error reading role binding %s for update: %s", d.Id(), err)
 		}
@@ -308,6 +360,13 @@ func resourceRoleBindingDelete(ctx context.Context, d *schema.ResourceData, meta
 	client, clientDiags := resolveClient(d, config)
 	if clientDiags.HasError() {
 		return clientDiags
+	}
+
+	// Resolve a stale id (e.g. renamed by IAM's migration) before deleting, so
+	// destroy doesn't silently no-op on the old id while a live binding for
+	// the same principal remains under the derived name.
+	if _, err := getRoleBindingWithFallback(ctx, client, d); err != nil && !isNotFoundError(err) {
+		return diag.Errorf("error reading role binding %s for delete: %s", d.Id(), err)
 	}
 
 	err := client.IAM().RoleBindings().DeleteProjectRoleBinding(ctx, d.Id())

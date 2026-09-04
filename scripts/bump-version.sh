@@ -40,8 +40,13 @@ if [ -f "$CHANGELOG_FILE" ] && grep -qE "## \[$ESCAPED_VERSION\]" "$CHANGELOG_FI
     fi
 fi
 
-# Get current version from latest git tag
-CURRENT_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "unknown")
+# Get current version from the Makefile.
+CURRENT_VERSION=$(grep '^VERSION?=' Makefile | sed 's/^VERSION?=//')
+
+if [ -z "$CURRENT_VERSION" ]; then
+    echo "Error: Could not find current VERSION in Makefile"
+    exit 1
+fi
 
 echo "Current version: $CURRENT_VERSION"
 echo "New version: $NEW_VERSION"
@@ -103,8 +108,11 @@ for f in "${UPDATED_FILES[@]}"; do
 done
 echo ""
 echo "Next steps:"
-echo "   git push origin $(git branch --show-current)"
-echo "   ./scripts/sync-to-github.sh --main"
-echo "   # Review and merge on GitHub, then:"
-echo "   ./scripts/sync-to-github.sh --tag v$NEW_VERSION"
+echo "   1. git push origin $(git branch --show-current), open a merge request on GitLab"
+echo "   2. Merge the MR"
+echo "   3. ./scripts/sync-to-github.sh --branch release/v$NEW_VERSION"
+echo "   4. Review and merge the resulting PR on GitHub"
+echo "   5. ./scripts/sync-to-github.sh --tag v$NEW_VERSION"
+echo "   6. Also tag it here on GitLab, so it's not GitHub-only:"
+echo "      git tag v$NEW_VERSION main && git push origin v$NEW_VERSION"
 echo ""
