@@ -129,9 +129,8 @@ func resourceVirtualMachine() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Computed:         true,
-				ForceNew:         true,
 				ValidateDiagFunc: validateVMStackType(),
-				Description:      "Network stack type: 'dual-stack' (IPv4 + IPv6), 'ipv6-only', or 'ipv4-only'. Defaults to the subnet's stack type.",
+				Description:      "Network stack type: 'dual-stack' (IPv4 + IPv6), 'ipv6-only', or 'ipv4-only'. Defaults to the subnet's stack type. Changing it stops and restarts the VM.",
 			},
 			"placement_group": {
 				Type:             schema.TypeString,
@@ -481,12 +480,12 @@ func resourceVirtualMachineUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	vmService := client.Compute().VirtualMachines()
-	needsStop := d.HasChange("flavor") || d.HasChange("placement_group")
+	needsStop := d.HasChange("flavor") || d.HasChange("placement_group") || d.HasChange("stack_type")
 
 	// Phase 1: Stop VM and wait if any change requires it
 	if needsStop {
 		stopUpdater := compute.UpdateVM(d.Id(), vmService).Stop()
-		if _, err := stopUpdater.Apply(ctx); err != nil {
+		if err := applyVMUpdateWithRetry(ctx, d, stopUpdater); err != nil {
 			return diag.Errorf("error stopping virtual machine %s: %s", d.Id(), err)
 		}
 		if _, err := vmService.WaitForStopped(ctx, d.Id(), d.Timeout(schema.TimeoutUpdate)); err != nil {
@@ -523,6 +522,11 @@ func resourceVirtualMachineUpdate(ctx context.Context, d *schema.ResourceData, m
 		hasChanges = true
 	}
 
+	if d.HasChange("stack_type") {
+		updater = updater.SetStackType(computetypes.VirtualMachineSpecNetworkingStackType(d.Get("stack_type").(string)))
+		hasChanges = true
+	}
+
 	if d.HasChange("security_groups") {
 		updater = applySecurityGroupChanges(updater, d, client)
 		hasChanges = true
@@ -534,16 +538,7 @@ func resourceVirtualMachineUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if hasChanges {
-		err := retry.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
-			if _, err := updater.Apply(ctx); err != nil {
-				if errors.Is(err, evroc.ErrConflict) {
-					return retry.RetryableError(err)
-				}
-				return retry.NonRetryableError(err)
-			}
-			return nil
-		})
-		if err != nil {
+		if err := applyVMUpdateWithRetry(ctx, d, updater); err != nil {
 			return diag.Errorf("error updating virtual machine %s: %s", d.Id(), err)
 		}
 		if needsStop {
@@ -700,11 +695,26 @@ func applyPublicIPChanges(ctx context.Context, d *schema.ResourceData, client *e
 
 // ensureVMRunningState handles Phase 3 (restarting after stop-required changes)
 // and standalone running state toggles.
+// applyVMUpdateWithRetry applies the update, retrying on 409 Conflict. The VM
+// controller may still be writing the object (e.g. status after a resize or
+// stop), which invalidates the resourceVersion fetched by Apply.
+func applyVMUpdateWithRetry(ctx context.Context, d *schema.ResourceData, updater *compute.VirtualMachineUpdateBuilder) error {
+	return retry.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *retry.RetryError {
+		if _, err := updater.Apply(ctx); err != nil {
+			if errors.Is(err, evroc.ErrConflict) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
+}
+
 func ensureVMRunningState(ctx context.Context, d *schema.ResourceData, vmService *compute.VirtualMachinesService, needsStop bool) diag.Diagnostics {
 	if needsStop {
 		if d.Get("running").(bool) {
 			startUpdater := compute.UpdateVM(d.Id(), vmService).Start()
-			if _, err := startUpdater.Apply(ctx); err != nil {
+			if err := applyVMUpdateWithRetry(ctx, d, startUpdater); err != nil {
 				return diag.Errorf("error starting virtual machine %s: %s", d.Id(), err)
 			}
 			if _, err := vmService.WaitForReady(ctx, d.Id(), d.Timeout(schema.TimeoutUpdate)); err != nil {
@@ -720,7 +730,7 @@ func ensureVMRunningState(ctx context.Context, d *schema.ResourceData, vmService
 
 	if d.Get("running").(bool) {
 		startUpdater := compute.UpdateVM(d.Id(), vmService).Start()
-		if _, err := startUpdater.Apply(ctx); err != nil {
+		if err := applyVMUpdateWithRetry(ctx, d, startUpdater); err != nil {
 			return diag.Errorf("error starting virtual machine %s: %s", d.Id(), err)
 		}
 		if _, err := vmService.WaitForReady(ctx, d.Id(), d.Timeout(schema.TimeoutUpdate)); err != nil {
@@ -728,7 +738,7 @@ func ensureVMRunningState(ctx context.Context, d *schema.ResourceData, vmService
 		}
 	} else {
 		stopUpdater := compute.UpdateVM(d.Id(), vmService).Stop()
-		if _, err := stopUpdater.Apply(ctx); err != nil {
+		if err := applyVMUpdateWithRetry(ctx, d, stopUpdater); err != nil {
 			return diag.Errorf("error stopping virtual machine %s: %s", d.Id(), err)
 		}
 		if _, err := vmService.WaitForStopped(ctx, d.Id(), d.Timeout(schema.TimeoutUpdate)); err != nil {

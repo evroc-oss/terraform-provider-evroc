@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-09-09
+
+### Changed
+- `evroc_virtual_machine`: `stack_type` can now be changed in place (the VM is stopped and restarted) instead of forcing a replacement
+
+### Fixed
+- `evroc_virtual_machine`: the stop and start requests around an update now retry on 409 Conflict, like the update itself, instead of failing the apply when the VM controller is still writing the object
+
 ## [0.9.0] - 2026-09-04
 
 ### Changed
@@ -191,7 +199,7 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.1...HEAD
 [0.7.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.1
 [0.5.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.5.1
 [0.4.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.2
@@ -202,3 +210,4 @@ Initial public release of the evroc Terraform Provider.
 [0.7.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.0
 [0.7.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.2
 [0.9.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.0
+[0.9.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.1
