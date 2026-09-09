@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -162,6 +163,80 @@ func TestAccEvrocVirtualMachine_DualStackSubnet(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccEvrocVirtualMachine_UpdateFlavorAndStackType(t *testing.T) {
+	resourceName := "evroc_virtual_machine.test"
+	ts := time.Now().Unix()
+	vmName := fmt.Sprintf("tf-test-vm-%d", ts)
+	diskName := fmt.Sprintf("tf-test-disk-%d", ts)
+	vpcName := fmt.Sprintf("tf-test-vpc-%d", ts)
+	subnetName := fmt.Sprintf("tf-test-subnet-%d", ts)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviderFactories,
+		CheckDestroy:      testAccCheckEvrocVirtualMachineDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEvrocVirtualMachineConfig_updatable(vmName, diskName, vpcName, subnetName, "a1a.s", "dual-stack"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEvrocVirtualMachineExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "flavor", "a1a.s"),
+					resource.TestCheckResourceAttr(resourceName, "stack_type", "dual-stack"),
+				),
+			},
+			{
+				// Both changes must update in place: stack_type is no longer ForceNew.
+				Config: testAccEvrocVirtualMachineConfig_updatable(vmName, diskName, vpcName, subnetName, "a1a.m", "ipv6-only"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEvrocVirtualMachineExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "flavor", "a1a.m"),
+					resource.TestCheckResourceAttr(resourceName, "stack_type", "ipv6-only"),
+					resource.TestCheckResourceAttr(resourceName, "running", "true"),
+				),
+			},
+		},
+	})
+}
+
+func testAccEvrocVirtualMachineConfig_updatable(vmName, diskName, vpcName, subnetName, flavor, stackType string) string {
+	return fmt.Sprintf(`
+resource "evroc_vpc" "test" {
+  name             = "%[3]s"
+  stack_type       = "dual-stack"
+  ipv4_cidr_blocks = ["10.0.0.0/16"]
+}
+
+resource "evroc_subnet" "test" {
+  name            = "%[4]s"
+  vpc_ref         = evroc_vpc.test.fqid
+  ipv4_cidr_block = "10.0.1.0/24"
+  stack_type      = "dual-stack"
+  zone            = "a"
+}
+
+resource "evroc_disk" "test" {
+  name  = "%[2]s"
+  size  = 100
+  image = "ubuntu-minimal.24-04.1"
+  zone  = "a"
+}
+
+resource "evroc_virtual_machine" "test" {
+  name       = "%[1]s"
+  flavor     = "%[5]s"
+  boot_disk  = evroc_disk.test.name
+  subnet_ref = evroc_subnet.test.fqid
+  stack_type = "%[6]s"
+  zone       = "a"
+}
+`, vmName, diskName, vpcName, subnetName, flavor, stackType)
 }
 
 func testAccEvrocVirtualMachineConfig_dualStackSubnet(vmName, diskName, vpcName, subnetName string) string {
