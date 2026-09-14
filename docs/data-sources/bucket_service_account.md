@@ -3,12 +3,12 @@
 page_title: "evroc_bucket_service_account Data Source - evroc"
 subcategory: ""
 description: |-
-  Retrieves information about an existing evroc bucket service account.
+  Retrieves information and S3-compatible access credentials for an existing evroc bucket service account. Credential values are sensitive but are stored in state.
 ---
 
 # evroc_bucket_service_account (Data Source)
 
-Retrieves information about an existing evroc bucket service account.
+Retrieves information and S3-compatible access credentials for an existing evroc bucket service account. Credential values are sensitive but are stored in state.
 
 
 
@@ -25,9 +25,11 @@ Retrieves information about an existing evroc bucket service account.
 
 ### Read-Only
 
+- `access_key_id` (String, Sensitive) S3 access key ID.
 - `buckets` (List of String) List of bucket names this service account can access.
 - `created_at` (String) Timestamp when the service account was created.
-- `credentials_secret` (String) Name of the Kubernetes secret containing S3 credentials.
+- `credentials_secret` (String) Identifier of the generated S3 credentials. Retained for compatibility with the deprecated `evroc_bucket_service_account_secret` data source.
 - `id` (String) The ID of this resource.
 - `region` (String) Region where the service account is located.
+- `secret_access_key` (String, Sensitive) S3 secret access key.
 - `service_account_id` (String) Unique identifier of the service account.

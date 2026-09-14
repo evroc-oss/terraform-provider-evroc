@@ -31,6 +31,8 @@ func TestAccEvrocBucketServiceAccount_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "buckets.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "buckets.0", bucketName),
 					resource.TestCheckResourceAttrSet(resourceName, "service_account_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "access_key_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "secret_access_key"),
 					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
 					resource.TestCheckResourceAttrSet(resourceName, "region"),
 				),

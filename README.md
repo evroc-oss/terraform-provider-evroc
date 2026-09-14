@@ -536,7 +536,6 @@ Then omit `access_key` and `secret_key` from the backend block.
 | `evroc_placement_group` | Look up existing placement groups |
 | `evroc_bucket` | Look up existing buckets |
 | `evroc_bucket_service_account` | Look up existing bucket service accounts |
-| `evroc_bucket_service_account_secret` | Retrieve S3 credentials for a bucket service account |
 | `evroc_project` | Look up existing projects |
 | `evroc_loadbalancer` | Look up existing load balancers |
 | `evroc_service_account` | Look up existing IAM service accounts |

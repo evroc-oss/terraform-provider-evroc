@@ -14,7 +14,7 @@ import (
 
 func dataSourceBucketServiceAccount() *schema.Resource {
 	return &schema.Resource{
-		Description: "Retrieves information about an existing evroc bucket service account.",
+		Description: "Retrieves information and S3-compatible access credentials for an existing evroc bucket service account. Credential values are sensitive but are stored in state.",
 
 		ReadContext: dataSourceBucketServiceAccountRead,
 
@@ -51,7 +51,19 @@ func dataSourceBucketServiceAccount() *schema.Resource {
 			"credentials_secret": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "Name of the Kubernetes secret containing S3 credentials.",
+				Description: "Identifier of the generated S3 credentials. Retained for compatibility with the deprecated `evroc_bucket_service_account_secret` data source.",
+			},
+			"access_key_id": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Sensitive:   true,
+				Description: "S3 access key ID.",
+			},
+			"secret_access_key": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Sensitive:   true,
+				Description: "S3 secret access key.",
 			},
 			"created_at": {
 				Type:        schema.TypeString,
@@ -94,7 +106,19 @@ func dataSourceBucketServiceAccountRead(ctx context.Context, d *schema.ResourceD
 	}
 
 	if sa.Status.S3CredentialsSecretName != nil {
-		diags = setDiag(d, "credentials_secret", *sa.Status.S3CredentialsSecretName, diags)
+		credentialsSecret := *sa.Status.S3CredentialsSecretName
+		diags = setDiag(d, "credentials_secret", credentialsSecret, diags)
+
+		secret, err := client.Storage().BucketServiceAccountSecrets().Get(ctx, credentialsSecret)
+		if err != nil {
+			return diag.Errorf("error reading credentials for bucket service account %s: %s", d.Id(), err)
+		}
+		if secret.Data.AccessKeyID != nil {
+			diags = setDiag(d, "access_key_id", *secret.Data.AccessKeyID, diags)
+		}
+		if secret.Data.SecretAccessKey != nil {
+			diags = setDiag(d, "secret_access_key", *secret.Data.SecretAccessKey, diags)
+		}
 	}
 
 	return diags

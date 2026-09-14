@@ -35,13 +35,11 @@ resource "evroc_bucket" "versioned_data" {
     }
   }
 
-  # Keep at most 5 old versions, drop versions older than 90 days,
-  # and abort incomplete multipart uploads after 7 days
+  # Keep at most 5 old versions and abort incomplete multipart uploads after 7 days
   lifecycle_rule {
     id = "cleanup-versions"
 
     expire_non_current_version {
-      days             = 90
       max_num_versions = 5
     }
 
@@ -91,14 +89,20 @@ data "evroc_bucket_service_account" "app_access" {
   name = evroc_bucket_service_account.app_access.name
 }
 
-data "evroc_bucket_service_account_secret" "app_access" {
-  name = evroc_bucket_service_account.app_access.credentials_secret
-}
-
 # Output bucket details
 output "app_data_bucket_id" {
   value       = evroc_bucket.app_data.bucket_id
   description = "ID of the app data bucket"
+}
+
+output "s3_region" {
+  value       = evroc_bucket.app_data.region
+  description = "S3 region for the app data bucket"
+}
+
+output "s3_endpoint" {
+  value       = "https://s3.${evroc_bucket.app_data.region}.evroc.com/"
+  description = "S3-compatible endpoint for the app data bucket"
 }
 
 output "locked_bucket_retention" {
@@ -114,13 +118,13 @@ output "app_service_account_id" {
 
 output "app_credentials_secret" {
   value       = evroc_bucket_service_account.app_access.credentials_secret
-  description = "Kubernetes secret containing S3 credentials for app access"
+  description = "Generated S3 credential identifier for app access"
   sensitive   = true
 }
 
 output "backup_credentials_secret" {
   value       = evroc_bucket_service_account.backup_access.credentials_secret
-  description = "Kubernetes secret containing S3 credentials for backup access"
+  description = "Generated S3 credential identifier for backup access"
   sensitive   = true
 }
 
@@ -131,13 +135,13 @@ output "accessible_buckets" {
 
 # S3 credentials for direct use (e.g., in app config)
 output "s3_access_key_id" {
-  value       = data.evroc_bucket_service_account_secret.app_access.access_key_id
+  value       = evroc_bucket_service_account.app_access.access_key_id
   description = "S3 access key ID for the app service account"
   sensitive   = true
 }
 
 output "s3_secret_access_key" {
-  value       = data.evroc_bucket_service_account_secret.app_access.secret_access_key
+  value       = evroc_bucket_service_account.app_access.secret_access_key
   description = "S3 secret access key for the app service account"
   sensitive   = true
 }
