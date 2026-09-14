@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-09-10
+
+### Added
+
+- `evroc_bucket_service_account` resources and data sources now expose S3 credentials directly as sensitive outputs; the separate credentials data source is deprecated
+
+### Fixed
+
+- Validate non-current-version lifecycle rules before apply and correct the storage example
+
 ## [0.9.1] - 2026-09-09
 
 ### Changed
@@ -200,7 +210,7 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.2...HEAD
 [0.7.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.1
 [0.5.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.5.1
 [0.4.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.2
@@ -212,3 +222,4 @@ Initial public release of the evroc Terraform Provider.
 [0.7.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.2
 [0.9.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.0
 [0.9.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.1
+[0.9.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.2

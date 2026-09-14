@@ -22,7 +22,6 @@ func TestExpandBucketLifecyclePolicy(t *testing.T) {
 			},
 			"expire_non_current_version": []interface{}{
 				map[string]interface{}{
-					"days":             7,
 					"max_num_versions": 3,
 				},
 			},
@@ -68,7 +67,7 @@ func TestExpandBucketLifecyclePolicy(t *testing.T) {
 	if rule.ExpireCurrentVersion.ExpireOrphanedDeletionMarkers == nil || !*rule.ExpireCurrentVersion.ExpireOrphanedDeletionMarkers {
 		t.Errorf("expected ExpireOrphanedDeletionMarkers true, got %+v", rule.ExpireCurrentVersion.ExpireOrphanedDeletionMarkers)
 	}
-	if rule.ExpireNonCurrentVersion == nil || *rule.ExpireNonCurrentVersion.Days != 7 || *rule.ExpireNonCurrentVersion.MaxNumVersions != 3 {
+	if rule.ExpireNonCurrentVersion == nil || rule.ExpireNonCurrentVersion.Days != nil || *rule.ExpireNonCurrentVersion.MaxNumVersions != 3 {
 		t.Errorf("unexpected ExpireNonCurrentVersion: %+v", rule.ExpireNonCurrentVersion)
 	}
 	if rule.AbortIncompleteMultipart == nil || rule.AbortIncompleteMultipart.Days != 5 {
@@ -85,6 +84,39 @@ func TestExpandBucketLifecyclePolicy(t *testing.T) {
 	}
 	if rule.Filter.Tag == nil || len(*rule.Filter.Tag) != 1 || (*rule.Filter.Tag)[0].Key != "env" || (*rule.Filter.Tag)[0].Value != "dev" {
 		t.Errorf("unexpected Filter.Tag: %+v", rule.Filter.Tag)
+	}
+}
+
+func TestExpandBucketLifecyclePolicyRejectsInvalidNonCurrentExpiry(t *testing.T) {
+	tests := []struct {
+		name   string
+		expiry map[string]interface{}
+	}{
+		{
+			name: "both limits",
+			expiry: map[string]interface{}{
+				"days":             90,
+				"max_num_versions": 5,
+			},
+		},
+		{
+			name:   "neither limit",
+			expiry: map[string]interface{}{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rules := []interface{}{
+				map[string]interface{}{
+					"id":                         "invalid",
+					"expire_non_current_version": []interface{}{tt.expiry},
+				},
+			}
+			if _, err := expandBucketLifecyclePolicy(rules); err == nil {
+				t.Fatal("expected an error, got nil")
+			}
+		})
 	}
 }
 
@@ -131,7 +163,6 @@ func TestFlattenBucketLifecyclePolicyRoundtrip(t *testing.T) {
 			},
 			"expire_non_current_version": []interface{}{
 				map[string]interface{}{
-					"days":             14,
 					"max_num_versions": 5,
 				},
 			},

@@ -12,7 +12,8 @@ import (
 
 func dataSourceBucketServiceAccountSecret() *schema.Resource {
 	return &schema.Resource{
-		Description: "Retrieves S3-compatible credentials for a bucket service account. These credentials can be used to access evroc object storage from any S3-compatible client.",
+		Description:        "Deprecated. Use the sensitive `access_key_id` and `secret_access_key` attributes on `evroc_bucket_service_account` instead.",
+		DeprecationMessage: "The evroc_bucket_service_account_secret data source is deprecated; use evroc_bucket_service_account.access_key_id and evroc_bucket_service_account.secret_access_key instead.",
 
 		ReadContext: dataSourceBucketServiceAccountSecretRead,
 
@@ -20,7 +21,7 @@ func dataSourceBucketServiceAccountSecret() *schema.Resource {
 			"name": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Name of the bucket service account.",
+				Description: "Credential identifier returned by `evroc_bucket_service_account.credentials_secret`. This is not the bucket service account name.",
 			},
 			"access_key_id": {
 				Type:        schema.TypeString,

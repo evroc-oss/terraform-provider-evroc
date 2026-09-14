@@ -21,6 +21,12 @@ func resourceBucket() *schema.Resource {
 		ReadContext:   resourceBucketRead,
 		UpdateContext: resourceBucketUpdate,
 		DeleteContext: resourceBucketDelete,
+		CustomizeDiff: func(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+			if !d.NewValueKnown("lifecycle_rule") {
+				return nil
+			}
+			return validateBucketLifecycleRules(d.Get("lifecycle_rule").([]interface{}))
+		},
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -388,14 +394,16 @@ func bucketLifecycleRuleSchema() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"days": {
-							Type:        schema.TypeInt,
-							Optional:    true,
-							Description: "Number of days after which a non-current version of an object expires.",
+							Type:             schema.TypeInt,
+							Optional:         true,
+							ValidateDiagFunc: validatePositiveInt(),
+							Description:      "Number of days after which a non-current version of an object expires.",
 						},
 						"max_num_versions": {
-							Type:        schema.TypeInt,
-							Optional:    true,
-							Description: "Maximum number of non-current versions to retain.",
+							Type:             schema.TypeInt,
+							Optional:         true,
+							ValidateDiagFunc: validatePositiveInt(),
+							Description:      "Maximum number of non-current versions to retain.",
 						},
 					},
 				},
@@ -478,6 +486,9 @@ func expandBucketLifecyclePolicy(rules []interface{}) (*storagetypes.BucketSpecL
 	if len(rules) == 0 {
 		return nil, nil
 	}
+	if err := validateBucketLifecycleRules(rules); err != nil {
+		return nil, err
+	}
 
 	policy := &storagetypes.BucketSpecLifecyclePolicy{}
 	for _, r := range rules {
@@ -511,6 +522,26 @@ func expandBucketLifecyclePolicy(rules []interface{}) (*storagetypes.BucketSpecL
 	}
 
 	return policy, nil
+}
+
+func validateBucketLifecycleRules(rules []interface{}) error {
+	for i, rawRule := range rules {
+		rule, ok := rawRule.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		expiry := firstBlock(rule, "expire_non_current_version")
+		if expiry == nil {
+			continue
+		}
+
+		days, _ := expiry["days"].(int)
+		maxVersions, _ := expiry["max_num_versions"].(int)
+		if (days > 0) == (maxVersions > 0) {
+			return fmt.Errorf("lifecycle_rule.%d.expire_non_current_version must specify exactly one of days or max_num_versions", i)
+		}
+	}
+	return nil
 }
 
 func expandLifecycleExpireCurrentVersion(b map[string]interface{}, ruleID string) (*storagetypes.BucketSpecLifecyclePolicyExpireCurrentVersion, error) {

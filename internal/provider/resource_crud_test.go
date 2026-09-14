@@ -524,6 +524,8 @@ func TestResourceBucketServiceAccountRead(t *testing.T) {
 	assertField(t, d, "name", "test-sa")
 	assertField(t, d, "region", "se-sto")
 	assertField(t, d, "credentials_secret", "s3-credentials-secret")
+	assertField(t, d, "access_key_id", "test-access-key-id")
+	assertField(t, d, "secret_access_key", "test-secret-access-key")
 	buckets := d.Get("buckets").([]interface{})
 	if len(buckets) != 1 || buckets[0].(string) != "test-bucket" {
 		t.Errorf("expected buckets=[test-bucket], got %v", buckets)
@@ -817,6 +819,8 @@ func TestDataSourceBucketServiceAccountRead(t *testing.T) {
 	assertField(t, d, "name", "test-sa")
 	assertField(t, d, "region", "se-sto")
 	assertField(t, d, "credentials_secret", "s3-credentials-secret")
+	assertField(t, d, "access_key_id", "test-access-key-id")
+	assertField(t, d, "secret_access_key", "test-secret-access-key")
 	buckets := d.Get("buckets").([]interface{})
 	if len(buckets) != 1 || buckets[0].(string) != "test-bucket" {
 		t.Errorf("expected buckets=[test-bucket], got %v", buckets)
@@ -1601,6 +1605,8 @@ func TestResourceBucketServiceAccountCreate(t *testing.T) {
 	if d.Id() == "" {
 		t.Error("expected ID to be set after create")
 	}
+	assertField(t, d, "access_key_id", "test-access-key-id")
+	assertField(t, d, "secret_access_key", "test-secret-access-key")
 }
 
 func TestResourceProjectCreate(t *testing.T) {

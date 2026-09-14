@@ -72,7 +72,7 @@ func TestResourceSchemas(t *testing.T) {
 			resource:       resourceBucketServiceAccount(),
 			requiredFields: []string{"name", "buckets"},
 			optionalFields: []string{"region", "user_labels"},
-			computedFields: []string{"service_account_id", "system_labels", "credentials_secret", "created_at"},
+			computedFields: []string{"service_account_id", "system_labels", "credentials_secret", "access_key_id", "secret_access_key", "created_at"},
 		},
 		{
 			name:           "evroc_project",
@@ -287,7 +287,13 @@ func TestDataSourceSchemas(t *testing.T) {
 			name:           "evroc_bucket_service_account (data)",
 			resource:       dataSourceBucketServiceAccount(),
 			requiredFields: []string{"name"},
-			computedFields: []string{"service_account_id", "created_at"},
+			computedFields: []string{"service_account_id", "access_key_id", "secret_access_key", "created_at"},
+		},
+		{
+			name:           "evroc_bucket_service_account_secret (data)",
+			resource:       dataSourceBucketServiceAccountSecret(),
+			requiredFields: []string{"name"},
+			computedFields: []string{"access_key_id", "secret_access_key"},
 		},
 		{
 			name:           "evroc_disk_images (data)",
@@ -526,6 +532,26 @@ func TestProviderSchema(t *testing.T) {
 		if _, ok := p.DataSourcesMap[name]; !ok {
 			t.Errorf("data source %q not registered", name)
 		}
+	}
+}
+
+func TestBucketServiceAccountCredentialsAreSensitive(t *testing.T) {
+	resources := map[string]*schema.Resource{
+		"resource":    resourceBucketServiceAccount(),
+		"data source": dataSourceBucketServiceAccount(),
+	}
+	for kind, r := range resources {
+		for _, field := range []string{"access_key_id", "secret_access_key"} {
+			if !r.Schema[field].Sensitive {
+				t.Errorf("%s field %q should be Sensitive", kind, field)
+			}
+		}
+	}
+}
+
+func TestBucketServiceAccountSecretDataSourceIsDeprecated(t *testing.T) {
+	if dataSourceBucketServiceAccountSecret().DeprecationMessage == "" {
+		t.Error("evroc_bucket_service_account_secret should have a deprecation message")
 	}
 }
 

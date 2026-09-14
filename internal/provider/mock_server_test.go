@@ -428,6 +428,7 @@ func mockBucketServiceAccount(name string) *storagetypes.BucketServiceAccount {
 func setupBucketServiceAccountHandlers(ms *mockServer, name string) {
 	sa := mockBucketServiceAccount(name)
 	resourcePath := fmt.Sprintf("/storage/v1/projects/test-project/regions/se-sto/bucketServiceAccounts/%s", name)
+	secretPath := "/storage/v1/projects/test-project/regions/se-sto/bucketServiceAccountSecrets/s3-credentials-secret"
 	ms.mux.HandleFunc("/storage/v1/projects/test-project/regions/se-sto/bucketServiceAccounts", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, sa)
@@ -451,6 +452,22 @@ func setupBucketServiceAccountHandlers(ms *mockServer, name string) {
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
+	})
+	ms.mux.HandleFunc(secretPath, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		accessKeyID := "test-access-key-id"
+		secretAccessKey := "test-secret-access-key"
+		respondJSON(w, http.StatusOK, &storagetypes.Bucketserviceaccountsecret{
+			ApiVersion: "v1beta1",
+			Kind:       "BucketServiceAccountSecret",
+			Data: storagetypes.Data{
+				AccessKeyID:     &accessKeyID,
+				SecretAccessKey: &secretAccessKey,
+			},
+		})
 	})
 }
 

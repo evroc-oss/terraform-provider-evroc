@@ -15,7 +15,7 @@ import (
 
 func resourceBucketServiceAccount() *schema.Resource {
 	return &schema.Resource{
-		Description: "Manages an evroc bucket service account for S3-compatible access credentials.",
+		Description: "Manages an evroc bucket service account for S3-compatible access credentials. Credential values are sensitive but are stored in state.",
 
 		CreateContext: resourceBucketServiceAccountCreate,
 		ReadContext:   resourceBucketServiceAccountRead,
@@ -86,7 +86,19 @@ func resourceBucketServiceAccount() *schema.Resource {
 			"credentials_secret": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "Name of the Kubernetes secret containing S3 credentials.",
+				Description: "Identifier of the generated S3 credentials. Used by the `evroc_bucket_service_account_secret` data source for backward compatibility; new configurations can use `access_key_id` and `secret_access_key` directly from this resource.",
+			},
+			"access_key_id": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Sensitive:   true,
+				Description: "S3 access key ID.",
+			},
+			"secret_access_key": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Sensitive:   true,
+				Description: "S3 secret access key.",
 			},
 			"created_at": {
 				Type:        schema.TypeString,
@@ -142,6 +154,10 @@ func resourceBucketServiceAccountCreate(ctx context.Context, d *schema.ResourceD
 	// Use the ready resource's identity
 	d.SetId(readySA.Metadata.Id)
 
+	if _, err := client.Storage().BucketServiceAccounts().WaitForCredentials(ctx, name, timeout); err != nil {
+		return diag.Errorf("error waiting for bucket service account %s credentials: %s", name, err)
+	}
+
 	return resourceBucketServiceAccountRead(ctx, d, meta)
 }
 
@@ -179,7 +195,19 @@ func resourceBucketServiceAccountRead(ctx context.Context, d *schema.ResourceDat
 	}
 
 	if sa.Status.S3CredentialsSecretName != nil {
-		diags = setDiag(d, "credentials_secret", *sa.Status.S3CredentialsSecretName, diags)
+		credentialsSecret := *sa.Status.S3CredentialsSecretName
+		diags = setDiag(d, "credentials_secret", credentialsSecret, diags)
+
+		secret, err := client.Storage().BucketServiceAccountSecrets().Get(ctx, credentialsSecret)
+		if err != nil {
+			return diag.Errorf("error reading credentials for bucket service account %s: %s", d.Id(), err)
+		}
+		if secret.Data.AccessKeyID != nil {
+			diags = setDiag(d, "access_key_id", *secret.Data.AccessKeyID, diags)
+		}
+		if secret.Data.SecretAccessKey != nil {
+			diags = setDiag(d, "secret_access_key", *secret.Data.SecretAccessKey, diags)
+		}
 	}
 
 	if sa.Metadata.UserLabels != nil && len(*sa.Metadata.UserLabels) > 0 {
