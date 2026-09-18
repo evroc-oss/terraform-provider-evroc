@@ -17,13 +17,14 @@ Manages a project-scoped IAM role binding. A role binding grants one or more rol
 
 ### Required
 
-- `principal` (String) Principal FQID (e.g., /iam/projects/<project>/serviceAccounts/<name> or /iam/users/<uuid>).
+- `principal` (String) Principal FQID (e.g., /iam/projects/<project>/serviceAccounts/<name> or /iam/users/<uuid>). Changing this forces a new resource to be created.
 - `roles` (Block List, Min: 1) Roles granted to the principal. Each entry specifies a role and optionally limits it to specific resources. (see [below for nested schema](#nestedblock--roles))
 
 ### Optional
 
 - `display_name` (String) Optional human-friendly display name for the binding.
-- `project` (String) Project to create the role binding in. Defaults to the provider project.
+- `name` (String, Deprecated) Unique identifier for the role binding, derived automatically from principal: u-{user uuid} for users, sa-{project}.{service account name} for service accounts. Any value set here is ignored; kept settable only for backward compatibility with configs written before this was derived.
+- `project` (String) Project to create the role binding in. Defaults to the provider project. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 
@@ -31,7 +32,6 @@ Manages a project-scoped IAM role binding. A role binding grants one or more rol
 
 - `created_at` (String) Timestamp when the role binding was created (RFC3339 format).
 - `id` (String) The ID of this resource.
-- `name` (String) Unique identifier for the role binding, derived automatically from principal: u-{user uuid} for users, sa-{project}.{service account name} for service accounts.
 - `uid` (String) System-assigned unique identifier (UUID) of the role binding.
 
 <a id="nestedblock--roles"></a>

@@ -17,12 +17,12 @@ Manages an evroc project for organizing cloud resources within an organization.
 
 ### Required
 
-- `name` (String) Unique identifier for the project. Immutable after creation. Shown as 'id' in the console and CLI.
+- `name` (String) Unique identifier for the project. Immutable after creation. Shown as 'id' in the console and CLI. Changing this forces a new resource to be created.
 
 ### Optional
 
 - `display_name` (String) Human-friendly display name for the project. Mutable. Shown as 'name' in the console and CLI.
-- `organization` (String) Organization ID this project belongs to. Defaults to the provider organization. Immutable after creation.
+- `organization` (String) Organization ID this project belongs to. Defaults to the provider organization. Immutable after creation. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

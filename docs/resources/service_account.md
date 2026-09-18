@@ -17,13 +17,13 @@ Manages an evroc IAM service account. Service accounts are non-human identities 
 
 ### Required
 
-- `name` (String) Unique identifier for the service account. Immutable after creation.
+- `name` (String) Unique identifier for the service account. Immutable after creation. Changing this forces a new resource to be created.
 
 ### Optional
 
 - `description` (String) Human-readable description of the service account's purpose.
 - `enabled` (Boolean) Whether the service account is enabled.
-- `project` (String) Project this service account belongs to. Defaults to the provider project.
+- `project` (String) Project this service account belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

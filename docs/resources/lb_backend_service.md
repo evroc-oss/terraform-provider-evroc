@@ -18,16 +18,16 @@ Provides an evroc load balancer backend service resource. A backend service defi
 ### Required
 
 - `backend_pool_ref` (String) Fully qualified reference to the backend pool (e.g., evroc_lb_backend_pool.my_pool.fqid).
-- `name` (String) Name of the backend service. Must be unique within the project.
+- `name` (String) Name of the backend service. Must be unique within the project. Changing this forces a new resource to be created.
 - `port` (Number) Backend port to forward traffic to on the target instances.
 
 ### Optional
 
 - `health_check` (Block List, Max: 1) Active health check configuration for this backend service. (see [below for nested schema](#nestedblock--health_check))
-- `ip_protocol_selection` (String) IP protocol selection for backends. Valid values are "IPv4" and "IPv6".
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
+- `ip_protocol_selection` (String) IP protocol selection for backends. Valid values are "IPv4" and "IPv6". Defaults to the server-side value (currently "IPv4") when unset.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
 - `proxy_protocol` (Boolean) Enable PROXY protocol to pass the real client IP to backends.
-- `region` (String) Region where the backend service is created. Defaults to provider region.
+- `region` (String) Region where the backend service is created. Defaults to provider region. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

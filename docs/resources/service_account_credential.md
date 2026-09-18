@@ -17,15 +17,15 @@ Manages an evroc IAM service account credential. Credentials provide authenticat
 
 ### Required
 
-- `expires_at` (String) Expiration timestamp for the credential (RFC3339 format).
-- `name` (String) Unique identifier for the credential. Immutable after creation.
-- `service_account_ref` (String) Fully qualified ID of the parent service account (e.g., /iam/projects/<project>/serviceAccounts/<name>).
+- `expires_at` (String) Expiration timestamp for the credential (RFC3339 format). Changing this forces a new resource to be created.
+- `name` (String) Unique identifier for the credential. Immutable after creation. Changing this forces a new resource to be created.
+- `service_account_ref` (String) Fully qualified ID of the parent service account (e.g., /iam/projects/<project>/serviceAccounts/<name>). Changing this forces a new resource to be created.
 
 ### Optional
 
-- `access_token_lifetime` (Number) Access token lifetime in seconds for RS256 JWT credentials.
-- `description` (String) Human-readable description of the credential's purpose.
-- `project` (String) Project this credential belongs to. Defaults to the provider project.
+- `access_token_lifetime` (Number) Access token lifetime in seconds for RS256 JWT credentials. Changing this forces a new resource to be created.
+- `description` (String) Human-readable description of the credential's purpose. Changing this forces a new resource to be created.
+- `project` (String) Project this credential belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

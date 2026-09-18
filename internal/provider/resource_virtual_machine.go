@@ -136,7 +136,7 @@ func resourceVirtualMachine() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				DiffSuppressFunc: suppressFQIDDiff,
-				Description:      "Placement group name for VM placement control (e.g., for HA configurations). Accepts FQID or plain name.",
+				Description:      "Placement group name for VM placement control (e.g., for HA configurations). Accepts FQID or plain name. Changing it stops and restarts the VM.",
 			},
 			"running": {
 				Type:        schema.TypeBool,

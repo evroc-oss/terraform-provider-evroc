@@ -157,6 +157,7 @@ func New(version string) func() *schema.Provider {
 			},
 		}
 
+		annotateForceNew(p.ResourcesMap)
 		p.ConfigureContextFunc = configure(version, p)
 
 		return p

@@ -17,12 +17,12 @@ Manages an evroc Think API key for authenticating requests to shared and dedicat
 
 ### Required
 
-- `name` (String) Name of the API key. Must be unique within the project.
+- `name` (String) Name of the API key. Must be unique within the project. Changing this forces a new resource to be created.
 
 ### Optional
 
-- `expiry` (String) Expiry timestamp in RFC3339 format (e.g., 2026-12-31T23:59:59Z). If omitted, the key does not expire.
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
+- `expiry` (String) Expiry timestamp in RFC3339 format (e.g., 2026-12-31T23:59:59Z). If omitted, the key does not expire. Changing this forces a new resource to be created.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

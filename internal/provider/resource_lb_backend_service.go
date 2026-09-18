@@ -73,7 +73,8 @@ func resourceLBBackendService() *schema.Resource {
 			"ip_protocol_selection": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				Description:      "IP protocol selection for backends. Valid values are \"IPv4\" and \"IPv6\".",
+				Computed:         true,
+				Description:      "IP protocol selection for backends. Valid values are \"IPv4\" and \"IPv6\". Defaults to the server-side value (currently \"IPv4\") when unset.",
 				ValidateDiagFunc: validateIPProtocolSelection(),
 			},
 			"health_check": {
