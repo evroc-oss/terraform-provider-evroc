@@ -17,16 +17,16 @@ Provides an evroc disk resource for persistent block storage.
 
 ### Required
 
-- `name` (String) Name of the disk. Must be unique within the project.
-- `zone` (String) Zone (e.g., a, b, c).
+- `name` (String) Name of the disk. Must be unique within the project. Changing this forces a new resource to be created.
+- `zone` (String) Zone (e.g., a, b, c). Changing this forces a new resource to be created.
 
 ### Optional
 
-- `image` (String) OS image for the disk (e.g., ubuntu-24.04, rocky-9-6). Mutually exclusive with snapshot.
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the disk is created. Defaults to provider region.
-- `size` (Number) Size of the disk in GB (changes force recreation).
-- `snapshot` (String) Snapshot to create the disk from. Accepts FQID or plain name. Mutually exclusive with image.
+- `image` (String) OS image for the disk (e.g., ubuntu-24.04, rocky-9-6). Mutually exclusive with snapshot. Changing this forces a new resource to be created.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the disk is created. Defaults to provider region. Changing this forces a new resource to be created.
+- `size` (Number) Size of the disk in GB. Can be increased in place; decreasing it forces a new resource to be created.
+- `snapshot` (String) Snapshot to create the disk from. Accepts FQID or plain name. Mutually exclusive with image. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

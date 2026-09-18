@@ -17,16 +17,16 @@ Provides an evroc security group resource for network firewall rules.
 
 ### Required
 
-- `name` (String) Name of the security group. Must be unique within the project.
+- `name` (String) Name of the security group. Must be unique within the project. Changing this forces a new resource to be created.
 
 ### Optional
 
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the security group is created. Defaults to provider region.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the security group is created. Defaults to provider region. Changing this forces a new resource to be created.
 - `rule` (Block Set) List of security group rules. (see [below for nested schema](#nestedblock--rule))
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
-- `vpc_ref` (String) Reference to the VPC this security group belongs to. Accepts FQID or plain name. Defaults to the project's default VPC.
+- `vpc_ref` (String) Reference to the VPC this security group belongs to. Accepts FQID or plain name. Defaults to the project's default VPC. Changing this forces a new resource to be created.
 
 ### Read-Only
 

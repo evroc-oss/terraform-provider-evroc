@@ -566,8 +566,8 @@ func TestResourceForceNewFields(t *testing.T) {
 		{
 			name:           "evroc_disk",
 			resource:       resourceDisk(),
-			forceNewFields: []string{"name", "size", "image", "zone"},
-			mutableFields:  []string{"user_labels"},
+			forceNewFields: []string{"name", "image", "zone"},
+			mutableFields:  []string{"size", "user_labels"},
 		},
 		{
 			name:           "evroc_virtual_machine",

@@ -4,7 +4,7 @@ HOSTNAME=github.com
 NAMESPACE=evroc-oss
 NAME=evroc
 BINARY=terraform-provider-${NAME}
-VERSION?=0.9.2
+VERSION?=0.9.3
 OS_ARCH?=linux_amd64
 
 # Determine OS and architecture

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-09-18
+
+### Added
+- `evroc_disk`: `size` can now be increased in place; decreasing it still forces a replacement
+
+### Changed
+- Docs: attributes that force replacement now say so in their description; `evroc_virtual_machine.placement_group` notes that changing it stops and restarts the VM
+
+### Fixed
+- `evroc_lb_backend_service`: `ip_protocol_selection` no longer shows a perpetual plan diff when unset
+- e2e: stale `backend_count` check, script aborting before destroy, missing rebuild for dev overrides
+
+### Security
+- Bump `google.golang.org/grpc` to v1.83.2 (GO-2026-6348, GO-2026-6443)
+
 ## [0.9.2] - 2026-09-10
 
 ### Added

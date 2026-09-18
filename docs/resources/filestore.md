@@ -17,13 +17,13 @@ Manages an evroc FileStore — a managed file system for shared storage.
 
 ### Required
 
-- `name` (String) Name of the file store.
-- `zone` (String) Availability zone for the file store.
+- `name` (String) Name of the file store. Changing this forces a new resource to be created.
+- `zone` (String) Availability zone for the file store. Changing this forces a new resource to be created.
 
 ### Optional
 
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the file store will be created.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the file store will be created. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

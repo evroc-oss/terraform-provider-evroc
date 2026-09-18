@@ -17,12 +17,12 @@ Provides an evroc public IP address resource.
 
 ### Required
 
-- `name` (String) Name of the public IP. Must be unique within the project.
+- `name` (String) Name of the public IP. Must be unique within the project. Changing this forces a new resource to be created.
 
 ### Optional
 
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the public IP is allocated. Defaults to provider region.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the public IP is allocated. Defaults to provider region. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

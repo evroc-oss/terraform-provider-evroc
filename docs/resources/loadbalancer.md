@@ -18,13 +18,13 @@ Provides an evroc Layer 4 (TCP) load balancer resource for distributing traffic 
 ### Required
 
 - `listener` (Block Set, Min: 1) List of listeners (port mappings) for the load balancer. (see [below for nested schema](#nestedblock--listener))
-- `name` (String) Name of the load balancer. Must be unique within the project.
-- `public_ip_ref` (String) Fully qualified reference to the public IP for the load balancer (e.g., evroc_public_ip.my_ip.fqid).
+- `name` (String) Name of the load balancer. Must be unique within the project. Changing this forces a new resource to be created.
+- `public_ip_ref` (String) Fully qualified reference to the public IP for the load balancer (e.g., evroc_public_ip.my_ip.fqid). Changing this forces a new resource to be created.
 
 ### Optional
 
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the load balancer is created. Defaults to provider region.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the load balancer is created. Defaults to provider region. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

@@ -26,6 +26,8 @@ TF_VAR="-var=run_id=${RUN_ID}"
 info "Phase 0: Building provider (run_id=${RUN_ID})"
 cd "$DIR/.."
 make install
+# ~/.terraformrc dev_overrides resolve the provider from the repo root, which make install empties
+make build
 cd "$DIR"
 
 # ─────────────────────────────────────────────
@@ -121,7 +123,7 @@ check_attr "evroc_lb_backend_pool.app" "fqid"
 check_attr "evroc_lb_backend_pool.app" "created_at"
 check_attr "evroc_lb_backend_service.http" "service_id"
 check_attr "evroc_lb_backend_service.http" "fqid"
-check_attr "evroc_lb_backend_service.http" "backend_count"
+check_attr "evroc_lb_backend_service.http" "backend_pool_ref"
 check_attr "evroc_lb_l4_route.http" "route_id"
 check_attr "evroc_lb_l4_route.http" "fqid"
 check_attr "evroc_loadbalancer.app" "lb_id"
@@ -138,7 +140,7 @@ check_attr "data.evroc_loadbalancer.app" "lb_id"
 check_attr "data.evroc_loadbalancer.app" "public_ipv4_address"
 check_attr "data.evroc_lb_backend_pool.app" "pool_id"
 check_attr "data.evroc_lb_backend_service.http" "service_id"
-check_attr "data.evroc_lb_backend_service.http" "backend_count"
+check_attr "data.evroc_lb_backend_service.http" "backend_pool_ref"
 check_attr "data.evroc_lb_l4_route.http" "route_id"
 
 # ─────────────────────────────────────────────
@@ -149,7 +151,7 @@ else
   EC=$?
   if [ $EC -eq 2 ]; then
     fail "Plan shows unexpected changes"
-    terraform plan -no-color $TF_VAR 2>&1 | head -60
+    terraform plan -no-color $TF_VAR 2>&1 | head -60 || true
   else
     fail "Plan failed (exit $EC)"
   fi
@@ -207,7 +209,7 @@ else
   EC=$?
   if [ $EC -eq 2 ]; then
     fail "Post-import plan shows changes"
-    terraform plan -no-color $TF_VAR 2>&1 | head -80
+    terraform plan -no-color $TF_VAR 2>&1 | head -80 || true
   else
     fail "Post-import plan failed (exit $EC)"
   fi

@@ -17,13 +17,13 @@ Provides an evroc snapshot resource. Snapshots capture the state of a disk at a 
 
 ### Required
 
-- `disk_ref` (String) Reference to the disk to snapshot. Accepts FQID or plain name.
-- `name` (String) Name of the snapshot. Must be unique within the project.
+- `disk_ref` (String) Reference to the disk to snapshot. Accepts FQID or plain name. Changing this forces a new resource to be created.
+- `name` (String) Name of the snapshot. Must be unique within the project. Changing this forces a new resource to be created.
 
 ### Optional
 
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the snapshot is created. Defaults to provider region.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the snapshot is created. Defaults to provider region. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

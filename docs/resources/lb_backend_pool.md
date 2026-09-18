@@ -17,13 +17,13 @@ Provides an evroc load balancer backend pool resource. A backend pool groups VM 
 
 ### Required
 
-- `name` (String) Name of the backend pool. Must be unique within the project.
+- `name` (String) Name of the backend pool. Must be unique within the project. Changing this forces a new resource to be created.
 
 ### Optional
 
 - `backend_refs` (Set of String) Set of fully qualified VM references to use as backends (e.g., evroc_virtual_machine.my_vm.fqid).
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the backend pool is created. Defaults to provider region.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the backend pool is created. Defaults to provider region. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

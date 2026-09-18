@@ -17,14 +17,14 @@ Provides an evroc Virtual Private Cloud (VPC) resource for network isolation.
 
 ### Required
 
-- `name` (String) Name of the VPC. Must be unique within the project.
+- `name` (String) Name of the VPC. Must be unique within the project. Changing this forces a new resource to be created.
 
 ### Optional
 
-- `ipv4_cidr_blocks` (List of String) IPv4 CIDR blocks for the VPC. Must be within RFC 1918 ranges. Defaults to ["10.0.0.0/16"].
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the VPC is created. Defaults to provider region.
-- `stack_type` (String) Stack type: 'dual-stack' (IPv4 + IPv6) or 'ipv6-only'. Defaults to dual-stack.
+- `ipv4_cidr_blocks` (List of String) IPv4 CIDR blocks for the VPC. Must be within RFC 1918 ranges. Defaults to ["10.0.0.0/16"]. Changing this forces a new resource to be created.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the VPC is created. Defaults to provider region. Changing this forces a new resource to be created.
+- `stack_type` (String) Stack type: 'dual-stack' (IPv4 + IPv6) or 'ipv6-only'. Defaults to dual-stack. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 
