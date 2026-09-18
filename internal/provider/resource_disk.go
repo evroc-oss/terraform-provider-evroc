@@ -8,6 +8,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/evroc-oss/evroc-go-sdk/compute"
 	computetypes "github.com/evroc-oss/evroc-go-sdk/types/compute"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -21,6 +22,7 @@ func resourceDisk() *schema.Resource {
 		ReadContext:   resourceDiskRead,
 		UpdateContext: resourceDiskUpdate,
 		DeleteContext: resourceDiskDelete,
+		CustomizeDiff: diskSizeForceNewOnShrink,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -50,9 +52,8 @@ func resourceDisk() *schema.Resource {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Computed:         true,
-				ForceNew:         true,
 				ValidateDiagFunc: validatePositiveInt(),
-				Description:      "Size of the disk in GB (changes force recreation).",
+				Description:      "Size of the disk in GB. Can be increased in place; decreasing it forces a new resource to be created.",
 			},
 			"image": {
 				Type:          schema.TypeString,
@@ -231,12 +232,35 @@ func resourceDiskRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	return diags
 }
 
+// diskSizeForceNewOnShrink allows growing a disk in place but forces
+// replacement when the size is decreased, which the platform does not support.
+func diskSizeForceNewOnShrink(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+	if d.Id() == "" || !d.HasChange("size") || !d.NewValueKnown("size") {
+		return nil
+	}
+	old, new := d.GetChange("size")
+	if new.(int) < old.(int) {
+		return d.ForceNew("size")
+	}
+	return nil
+}
+
 func resourceDiskUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	config := meta.(*ProviderConfig)
 
 	client, diags := resolveClient(d, config)
 	if diags.HasError() {
 		return diags
+	}
+
+	if d.HasChange("size") {
+		disks := client.Compute().Disks()
+		if _, err := compute.UpdateDisk(d.Id(), disks).ResizeGB(int32(d.Get("size").(int))).Apply(ctx); err != nil {
+			return diag.Errorf("error resizing disk %s: %s", d.Id(), err)
+		}
+		if _, err := disks.WaitForReady(ctx, d.Id(), d.Timeout(schema.TimeoutUpdate)); err != nil {
+			return diag.Errorf("error waiting for disk %s to be ready after resize: %s", d.Id(), err)
+		}
 	}
 
 	if d.HasChange("user_labels") {

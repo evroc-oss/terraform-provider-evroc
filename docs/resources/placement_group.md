@@ -17,16 +17,16 @@ Manages an evroc placement group for VM placement control.
 
 ### Required
 
-- `name` (String) Name of the placement group.
-- `strategy` (String) Placement strategy: 'spread' or 'cluster'.
+- `name` (String) Name of the placement group. Changing this forces a new resource to be created.
+- `strategy` (String) Placement strategy: 'spread' or 'cluster'. Changing this forces a new resource to be created.
 
 ### Optional
 
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the placement group will be created.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the placement group will be created. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
-- `zone` (String) Zone for the placement group (a, b, or c).
+- `zone` (String) Zone for the placement group (a, b, or c). Changing this forces a new resource to be created.
 
 ### Read-Only
 

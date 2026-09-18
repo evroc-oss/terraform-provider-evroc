@@ -17,15 +17,15 @@ Manages an evroc Think instance for dedicated model inference. Large models may 
 
 ### Required
 
-- `model` (String) Model to serve (e.g., meta-llama/Llama-3.3-70B-Instruct). Must be the ID of an available Model.
-- `name` (String) Name of the Think instance. Must be unique within the project.
+- `model` (String) Model to serve (e.g., meta-llama/Llama-3.3-70B-Instruct). Must be the ID of an available Model. Changing this forces a new resource to be created.
+- `name` (String) Name of the Think instance. Must be unique within the project. Changing this forces a new resource to be created.
 
 ### Optional
 
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the instance is created. Defaults to provider region.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the instance is created. Defaults to provider region. Changing this forces a new resource to be created.
 - `running` (Boolean) Whether the instance should be running. Set to false to stop the instance and release GPU resources.
-- `size` (String) Instance size for GPU allocation. Must be the ID of an available Size.
+- `size` (String) Instance size for GPU allocation. Must be the ID of an available Size. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String, Deprecated) User-defined labels (key/value pairs) for organizing and selecting resources. Not currently supported by Think — any values set will be ignored.
 

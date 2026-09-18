@@ -17,16 +17,16 @@ Provides an evroc subnet resource within a VPC.
 
 ### Required
 
-- `name` (String) Name of the subnet. Must be unique within the project.
-- `vpc_ref` (String) Reference to the VPC this subnet belongs to. Accepts FQID or plain name.
-- `zone` (String) Zone for the subnet (e.g., a, b, c).
+- `name` (String) Name of the subnet. Must be unique within the project. Changing this forces a new resource to be created.
+- `vpc_ref` (String) Reference to the VPC this subnet belongs to. Accepts FQID or plain name. Changing this forces a new resource to be created.
+- `zone` (String) Zone for the subnet (e.g., a, b, c). Changing this forces a new resource to be created.
 
 ### Optional
 
-- `ipv4_cidr_block` (String) IPv4 CIDR block for the subnet. Must be within the VPC's CIDR range, prefix /16 to /29. Required when stack_type is 'dual-stack' (default).
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the subnet is created. Defaults to provider region.
-- `stack_type` (String) Stack type: 'dual-stack' or 'ipv6-only'. Defaults to dual-stack.
+- `ipv4_cidr_block` (String) IPv4 CIDR block for the subnet. Must be within the VPC's CIDR range, prefix /16 to /29. Required when stack_type is 'dual-stack' (default). Changing this forces a new resource to be created.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the subnet is created. Defaults to provider region. Changing this forces a new resource to be created.
+- `stack_type` (String) Stack type: 'dual-stack' or 'ipv6-only'. Defaults to dual-stack. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

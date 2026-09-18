@@ -17,15 +17,15 @@ Manages an evroc S3-compatible storage bucket with object retention and locking 
 
 ### Required
 
-- `name` (String) Name of the storage bucket.
+- `name` (String) Name of the storage bucket. Changing this forces a new resource to be created.
 
 ### Optional
 
 - `lifecycle_rule` (Block List) Lifecycle rules that determine how and when objects or object versions are automatically deleted. (see [below for nested schema](#nestedblock--lifecycle_rule))
 - `object_locking` (Block List, Max: 1) Default object locking configuration. (see [below for nested schema](#nestedblock--object_locking))
 - `object_retention_mode` (String) Object retention mode: Disabled, Versioned, or Locking.
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the bucket will be created.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the bucket will be created. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

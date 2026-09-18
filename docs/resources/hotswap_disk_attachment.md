@@ -17,14 +17,14 @@ Manages a hot-swap disk attachment to an evroc virtual machine. Allows attaching
 
 ### Required
 
-- `disk` (String) Name of the disk to attach.
-- `name` (String) Name of the disk attachment.
-- `virtual_machine` (String) Name of the virtual machine to attach the disk to.
+- `disk` (String) Name of the disk to attach. Changing this forces a new resource to be created.
+- `name` (String) Name of the disk attachment. Changing this forces a new resource to be created.
+- `virtual_machine` (String) Name of the virtual machine to attach the disk to. Changing this forces a new resource to be created.
 
 ### Optional
 
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the disk attachment will be created.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the disk attachment will be created. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

@@ -18,12 +18,12 @@ Provides an evroc load balancer L4 route resource. An L4 route directs Layer 4 t
 ### Required
 
 - `default_backend_service_ref` (String) Fully qualified reference to the backend service (e.g., evroc_lb_backend_service.my_svc.fqid).
-- `name` (String) Name of the L4 route. Must be unique within the project.
+- `name` (String) Name of the L4 route. Must be unique within the project. Changing this forces a new resource to be created.
 
 ### Optional
 
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
-- `region` (String) Region where the L4 route is created. Defaults to provider region.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
+- `region` (String) Region where the L4 route is created. Defaults to provider region. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 

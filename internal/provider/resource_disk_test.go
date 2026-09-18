@@ -35,6 +35,13 @@ func TestAccEvrocDisk_Basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccEvrocDiskConfig_size(diskName, 120),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEvrocDiskExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "size", "120"),
+				),
+			},
+			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -85,12 +92,16 @@ func testAccCheckEvrocDiskDestroy(s *terraform.State) error {
 }
 
 func testAccEvrocDiskConfig_basic(name string) string {
+	return testAccEvrocDiskConfig_size(name, 100)
+}
+
+func testAccEvrocDiskConfig_size(name string, size int) string {
 	return fmt.Sprintf(`
 resource "evroc_disk" "test" {
   name          = "%s"
-  size          = 100
+  size          = %d
   image         = "ubuntu-minimal.24-04.1"
   zone          = "a"
 }
-`, name)
+`, name, size)
 }

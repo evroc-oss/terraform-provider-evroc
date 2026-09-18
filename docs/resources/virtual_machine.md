@@ -17,24 +17,24 @@ Provides an evroc virtual machine resource. A boot disk is required at creation 
 
 ### Required
 
-- `boot_disk` (String) Name of the disk to use as boot disk. Accepts FQID or plain name.
+- `boot_disk` (String) Name of the disk to use as boot disk. Accepts FQID or plain name. Changing this forces a new resource to be created.
 - `flavor` (String) VM flavor/size (e.g., a1a.s, a1a.m, a1a.l, c1a.s). Changing this will stop the VM, resize, and restart it.
-- `name` (String) Name of the virtual machine. Must be unique within the project.
-- `zone` (String) Zone for the VM (e.g., a, b, c).
+- `name` (String) Name of the virtual machine. Must be unique within the project. Changing this forces a new resource to be created.
+- `zone` (String) Zone for the VM (e.g., a, b, c). Changing this forces a new resource to be created.
 
 ### Optional
 
-- `cloud_config_user_data` (String) Cloud-init user data script.
-- `data_disks` (List of String) List of additional data disks to attach at creation time. Accepts FQIDs or plain names.
-- `placement_group` (String) Placement group name for VM placement control (e.g., for HA configurations). Accepts FQID or plain name.
-- `project` (String) Project this resource belongs to. Defaults to the provider project.
+- `cloud_config_user_data` (String) Cloud-init user data script. Changing this forces a new resource to be created.
+- `data_disks` (List of String) List of additional data disks to attach at creation time. Accepts FQIDs or plain names. Changing this forces a new resource to be created.
+- `placement_group` (String) Placement group name for VM placement control (e.g., for HA configurations). Accepts FQID or plain name. Changing it stops and restarts the VM.
+- `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
 - `public_ip` (String) Name of the public IP to attach to the VM. Accepts FQID or plain name.
-- `region` (String) Region where the VM is created. Defaults to provider region.
+- `region` (String) Region where the VM is created. Defaults to provider region. Changing this forces a new resource to be created.
 - `running` (Boolean) Whether the VM should be running. Set to false to stop the VM.
 - `security_groups` (Set of String) Set of security group names to attach to the VM. Accepts FQIDs or plain names.
-- `ssh_keys` (List of String) List of SSH public keys to inject into the VM.
+- `ssh_keys` (List of String) List of SSH public keys to inject into the VM. Changing this forces a new resource to be created.
 - `stack_type` (String) Network stack type: 'dual-stack' (IPv4 + IPv6), 'ipv6-only', or 'ipv4-only'. Defaults to the subnet's stack type. Changing it stops and restarts the VM.
-- `subnet_ref` (String) Subnet for the VM. Defaults to the zone's default subnet. Accepts FQID or plain name.
+- `subnet_ref` (String) Subnet for the VM. Defaults to the zone's default subnet. Accepts FQID or plain name. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.
 
