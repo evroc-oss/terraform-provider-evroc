@@ -41,6 +41,24 @@ LB_IP=$(terraform output -raw lb_ip)
 info "VM IP: $VM_IP  Status: $VM_STATUS  LB IP: $LB_IP"
 pass "All resources created"
 
+# Ready=True does not prove backend reachability. Wait for cloud-init/nginx,
+# then verify the load balancer forwards the same page as the backend VM.
+check_lb_http() {
+  local attempt backend lb
+  for ((attempt = 0; attempt < 60; attempt++)); do
+    if backend=$(curl --noproxy '*' -fsS --connect-timeout 3 --max-time 5 "http://${VM_IP}/" 2>/dev/null) &&
+       lb=$(curl --noproxy '*' -fsS --connect-timeout 3 --max-time 5 "http://${LB_IP}/" 2>/dev/null) &&
+       [ "$backend" = "e2e-${RUN_ID}" ] && [ "$lb" = "$backend" ]; then
+      pass "Load balancer forwards HTTP to the custom-VPC backend"
+      return
+    fi
+    sleep 5
+  done
+  fail "Load balancer did not forward the backend HTTP response"
+}
+
+check_lb_http
+
 # ─────────────────────────────────────────────
 info "Phase 2: Verifying labels"
 STATE=$(terraform show -json)
@@ -216,6 +234,8 @@ else
 fi
 
 # ─────────────────────────────────────────────
+check_lb_http
+
 info "Phase 6: Destroy"
 terraform destroy -auto-approve $TF_VAR
 pass "All resources destroyed"

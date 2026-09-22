@@ -141,6 +141,9 @@ resource "evroc_virtual_machine" "web" {
     package_update: true
     packages:
       - nginx
+    write_files:
+      - path: /var/www/html/index.html
+        content: "e2e-${local.ts}"
   EOF
 
   user_labels = merge(local.common_labels, { "component" = "compute" })
@@ -177,6 +180,14 @@ resource "evroc_lb_l4_route" "http" {
 resource "evroc_loadbalancer" "app" {
   name          = "e2e-lb-${local.ts}"
   public_ip_ref = evroc_public_ip.lb.fqid
+
+  backend_network {
+    vpc_ref = evroc_vpc.main.fqid
+    subnet {
+      zone       = "a"
+      subnet_ref = evroc_subnet.app.fqid
+    }
+  }
 
   listener {
     name       = "http"
