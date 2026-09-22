@@ -11,6 +11,14 @@ import (
 	lbtypes "github.com/evroc-oss/evroc-go-sdk/types/loadbalancer"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+const (
+	loadBalancerVPCRefKey    = "vpc_ref"
+	loadBalancerSubnetKey    = "subnet"
+	loadBalancerZoneKey      = "zone"
+	loadBalancerSubnetRefKey = "subnet_ref"
 )
 
 func loadbalancerListenerResource() *schema.Resource {
@@ -90,6 +98,47 @@ func resourceLoadBalancer() *schema.Resource {
 				ForceNew:         true,
 				DiffSuppressFunc: suppressFQIDDiff,
 				Description:      "Fully qualified reference to the public IP for the load balancer (e.g., evroc_public_ip.my_ip.fqid).",
+			},
+			"backend_network": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				MaxItems:    1,
+				ForceNew:    true,
+				Description: "VPC and subnets for reaching backend VMs. If omitted, the load balancer attaches to the default VPC in every zone. When specified, the load balancer deploys only to the zones with a configured subnet.",
+				Elem: &schema.Resource{Schema: map[string]*schema.Schema{
+					loadBalancerVPCRefKey: {
+						Type:             schema.TypeString,
+						Required:         true,
+						ForceNew:         true,
+						DiffSuppressFunc: suppressFQIDDiff,
+						ValidateDiagFunc: validation.ToDiagFunc(validation.StringIsNotWhiteSpace),
+						Description:      "Fully qualified reference to the VPC containing the backend VMs.",
+					},
+					loadBalancerSubnetKey: {
+						Type:        schema.TypeSet,
+						Required:    true,
+						MinItems:    1,
+						ForceNew:    true,
+						Description: "Subnets to attach to in the selected VPC, with one subnet per deployment zone.",
+						Elem: &schema.Resource{Schema: map[string]*schema.Schema{
+							loadBalancerZoneKey: {
+								Type:             schema.TypeString,
+								Required:         true,
+								ForceNew:         true,
+								ValidateDiagFunc: validateZone(),
+								Description:      "Zone to deploy to: a, b, or c.",
+							},
+							loadBalancerSubnetRefKey: {
+								Type:             schema.TypeString,
+								Required:         true,
+								ForceNew:         true,
+								DiffSuppressFunc: suppressFQIDDiff,
+								ValidateDiagFunc: validation.ToDiagFunc(validation.StringIsNotWhiteSpace),
+								Description:      "Fully qualified reference to the subnet in this zone.",
+							},
+						}},
+					},
+				}},
 			},
 			"listener": {
 				Type:        schema.TypeSet,
@@ -171,7 +220,9 @@ func resourceLoadBalancerCreate(ctx context.Context, d *schema.ResourceData, met
 		builder = builder.WithListener(l)
 	}
 
-	lb, err := builder.Create(ctx, client.LoadBalancer().LoadBalancers())
+	request := builder.Build()
+	request.Spec.BackendNetwork = expandLoadBalancerBackendNetwork(d.Get("backend_network").([]interface{}))
+	lb, err := client.LoadBalancer().LoadBalancers().Create(ctx, request)
 	if err != nil {
 		return diag.Errorf("error creating load balancer %s: %s", name, err)
 	}
@@ -214,6 +265,7 @@ func resourceLoadBalancerRead(ctx context.Context, d *schema.ResourceData, meta 
 	diags = setDiag(d, "lb_id", lb.Metadata.Uid.String(), diags)
 	diags = setDiag(d, "created_at", lb.Metadata.CreationTimestamp.Format(time.RFC3339), diags)
 	diags = setDiag(d, "public_ip_ref", lb.Spec.PublicIPRef, diags)
+	diags = setDiag(d, "backend_network", flattenLoadBalancerBackendNetwork(lb.Spec.BackendNetwork), diags)
 	diags = setDiag(d, "listener", flattenLoadBalancerListeners(lb.Spec.Listeners), diags)
 
 	if lb.Metadata.UserLabels != nil && len(*lb.Metadata.UserLabels) > 0 {
@@ -295,6 +347,33 @@ func resourceLoadBalancerDelete(ctx context.Context, d *schema.ResourceData, met
 
 	d.SetId("")
 	return nil
+}
+
+func expandLoadBalancerBackendNetwork(blocks []interface{}) *lbtypes.LoadbalancerSpecBackendNetwork {
+	if len(blocks) == 0 {
+		return nil
+	}
+	m := blocks[0].(map[string]interface{})
+	network := &lbtypes.LoadbalancerSpecBackendNetwork{VpcRef: m[loadBalancerVPCRefKey].(string)}
+	for _, item := range m[loadBalancerSubnetKey].(*schema.Set).List() {
+		subnet := item.(map[string]interface{})
+		network.Subnets = append(network.Subnets, struct {
+			SubnetRef string                                            `json:"subnetRef"`
+			Zone      lbtypes.LoadbalancerSpecBackendNetworkSubnetsZone `json:"zone"`
+		}{SubnetRef: subnet[loadBalancerSubnetRefKey].(string), Zone: lbtypes.LoadbalancerSpecBackendNetworkSubnetsZone(subnet[loadBalancerZoneKey].(string))})
+	}
+	return network
+}
+
+func flattenLoadBalancerBackendNetwork(network *lbtypes.LoadbalancerSpecBackendNetwork) []interface{} {
+	if network == nil {
+		return nil
+	}
+	subnets := make([]interface{}, 0, len(network.Subnets))
+	for _, subnet := range network.Subnets {
+		subnets = append(subnets, map[string]interface{}{loadBalancerZoneKey: string(subnet.Zone), loadBalancerSubnetRefKey: subnet.SubnetRef})
+	}
+	return []interface{}{map[string]interface{}{loadBalancerVPCRefKey: network.VpcRef, loadBalancerSubnetKey: subnets}}
 }
 
 func expandLoadBalancerListeners(listenersSet *schema.Set) []lbtypes.LoadbalancerSpecListenersItem {

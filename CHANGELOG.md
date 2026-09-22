@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-09-22
+
+### Fixed
+- `evroc_loadbalancer`: add `backend_network` support for custom VPCs and subnets; network changes force replacement
+
+### Documentation
+- Document default networking and migration from CLI-created load balancers
+
 ## [0.9.3] - 2026-09-18
 
 ### Added
@@ -225,7 +233,7 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.2...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.4...HEAD
 [0.7.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.1
 [0.5.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.5.1
 [0.4.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.2
@@ -238,3 +246,5 @@ Initial public release of the evroc Terraform Provider.
 [0.9.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.0
 [0.9.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.1
 [0.9.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.2
+[0.9.3]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.3
+[0.9.4]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.4
