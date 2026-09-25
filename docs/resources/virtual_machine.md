@@ -33,7 +33,7 @@ Provides an evroc virtual machine resource. A boot disk is required at creation 
 - `running` (Boolean) Whether the VM should be running. Set to false to stop the VM.
 - `security_groups` (Set of String) Set of security group names to attach to the VM. Accepts FQIDs or plain names.
 - `ssh_keys` (List of String) List of SSH public keys to inject into the VM. Changing this forces a new resource to be created.
-- `stack_type` (String) Network stack type: 'dual-stack' (IPv4 + IPv6), 'ipv6-only', or 'ipv4-only'. Defaults to the subnet's stack type. Changing it stops and restarts the VM.
+- `stack_type` (String) Network stack type: 'dual-stack' (IPv4 + IPv6) or 'ipv6-only'. 'ipv4-only' is deprecated and cannot be configured; omit this argument for existing IPv4-only VMs. Defaults to the subnet's stack type. Changing it stops and restarts the VM.
 - `subnet_ref` (String) Subnet for the VM. Defaults to the zone's default subnet. Accepts FQID or plain name. Changing this forces a new resource to be created.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `user_labels` (Map of String) User-defined labels (key/value pairs) for organizing and selecting resources.

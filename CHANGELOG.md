@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-09-25
+
+### Fixed
+- `evroc_virtual_machine`: reject deprecated `stack_type = "ipv4-only"` at plan time and update supported values in the docs
+
 ## [0.9.4] - 2026-09-22
 
 ### Fixed
@@ -233,7 +238,8 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.4...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.5...HEAD
+[0.9.5]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.5
 [0.7.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.1
 [0.5.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.5.1
 [0.4.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.4.2

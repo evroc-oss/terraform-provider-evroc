@@ -201,3 +201,11 @@ func TestValidatePositiveInt(t *testing.T) {
 		t.Error("expected non-int input to be invalid, got no error")
 	}
 }
+
+func TestValidateVMStackType(t *testing.T) {
+	for _, value := range []string{"dual-stack", "ipv6-only", "ipv4-only"} {
+		if diags := validateVMStackType()(value, nil); diags.HasError() != (value == "ipv4-only") {
+			t.Errorf("stack_type %q: unexpected diagnostics: %v", value, diags)
+		}
+	}
+}

@@ -130,7 +130,7 @@ func resourceVirtualMachine() *schema.Resource {
 				Optional:         true,
 				Computed:         true,
 				ValidateDiagFunc: validateVMStackType(),
-				Description:      "Network stack type: 'dual-stack' (IPv4 + IPv6), 'ipv6-only', or 'ipv4-only'. Defaults to the subnet's stack type. Changing it stops and restarts the VM.",
+				Description:      "Network stack type: 'dual-stack' (IPv4 + IPv6) or 'ipv6-only'. 'ipv4-only' is deprecated and cannot be configured; omit this argument for existing IPv4-only VMs. Defaults to the subnet's stack type. Changing it stops and restarts the VM.",
 			},
 			"placement_group": {
 				Type:             schema.TypeString,
