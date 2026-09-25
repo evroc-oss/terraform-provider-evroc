@@ -57,7 +57,7 @@ func validateVPCStackType() schema.SchemaValidateDiagFunc {
 }
 
 func validateVMStackType() schema.SchemaValidateDiagFunc {
-	return validation.ToDiagFunc(validation.StringInSlice([]string{"dual-stack", "ipv6-only", "ipv4-only"}, false))
+	return validation.ToDiagFunc(validation.StringInSlice([]string{"dual-stack", "ipv6-only"}, false))
 }
 
 var rfc1918Nets []*net.IPNet
