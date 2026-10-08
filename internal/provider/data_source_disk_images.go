@@ -96,6 +96,11 @@ func dataSourceDiskImages() *schema.Resource {
 				Computed:    true,
 				Description: "Ubuntu 22.04.1 image.",
 			},
+			"rocky_10_1_1": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Rocky Linux 10.1.1 image.",
+			},
 			"rocky_10_0_1": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -125,6 +130,11 @@ func dataSourceDiskImages() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "OpenSUSE 15.5.1 image.",
+			},
+			"sles_16_0_1": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "SUSE Linux Enterprise Server 16.0.1 image.",
 			},
 			"sles_15_6_1": {
 				Type:        schema.TypeString,
@@ -193,12 +203,16 @@ func dataSourceDiskImagesRead(ctx context.Context, d *schema.ResourceData, meta 
 	// Set the named convenience field for each image that has one declared in
 	// the schema (ubuntu-minimal.24-04.1 -> ubuntu_minimal_24_04_1). Images
 	// without a declared field are still available through the images list.
-	schemaFields := dataSourceDiskImages().Schema
+	// Images no longer offered get "" so evroc_disk rejects them.
+	offered := map[string]string{}
 	for _, img := range images {
 		fieldName := strings.ReplaceAll(img, ".", "_")
 		fieldName = strings.ReplaceAll(fieldName, "-", "_")
-		if _, ok := schemaFields[fieldName]; ok {
-			diags = setDiag(d, fieldName, img, diags)
+		offered[fieldName] = img
+	}
+	for fieldName, field := range dataSourceDiskImages().Schema {
+		if field.Type == schema.TypeString {
+			diags = setDiag(d, fieldName, offered[fieldName], diags)
 		}
 	}
 

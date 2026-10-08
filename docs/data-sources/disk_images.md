@@ -23,12 +23,14 @@ Lists the disk images currently available in the evroc platform, queried live fr
 - `opensuse_15_5_1` (String) OpenSUSE 15.5.1 image.
 - `opensuse_15_6_1` (String) OpenSUSE 15.6.1 image.
 - `rocky_10_0_1` (String) Rocky Linux 10.0.1 image.
+- `rocky_10_1_1` (String) Rocky Linux 10.1.1 image.
 - `rocky_8_10_1` (String) Rocky Linux 8.10.1 image.
 - `rocky_9_5_1` (String) Rocky Linux 9.5.1 image.
 - `rocky_9_6_1` (String) Rocky Linux 9.6.1 image.
 - `sl_micro_6_1_1` (String) SUSE Linux Micro 6.1.1 image.
 - `sles_15_5_1` (String) SUSE Linux Enterprise Server 15.5.1 image.
 - `sles_15_6_1` (String) SUSE Linux Enterprise Server 15.6.1 image.
+- `sles_16_0_1` (String) SUSE Linux Enterprise Server 16.0.1 image.
 - `ubuntu_22_04_1` (String) Ubuntu 22.04.1 image.
 - `ubuntu_24_04_1` (String) Ubuntu 24.04.1 image.
 - `ubuntu_minimal_24_04_1` (String) Ubuntu 24.04.1 Minimal image.

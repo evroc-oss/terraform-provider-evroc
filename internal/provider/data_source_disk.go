@@ -5,7 +5,6 @@ package provider
 
 import (
 	"context"
-	"path"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -50,7 +49,7 @@ func dataSourceDisk() *schema.Resource {
 			"image": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "OS image used for the disk.",
+				Description: "Stock OS image name or fully qualified custom image reference used for the disk.",
 			},
 			"created_at": {
 				Type:        schema.TypeString,
@@ -95,11 +94,9 @@ func dataSourceDiskRead(ctx context.Context, d *schema.ResourceData, meta interf
 		diags = setDiag(d, "size", int(disk.Spec.DiskSize.Amount), diags)
 	}
 
-	// Set image if present (DiskImageRef is a string reference path)
-	// API returns full path like "/compute/global/diskImages/ubuntu-22.04"
-	// Extract just the image name (last part of path)
+	// Preserve custom refs so refresh/import cannot turn them into stock image names.
 	if disk.Spec.Source != nil && disk.Spec.Source.DiskImageRef != nil {
-		imageName := path.Base(*disk.Spec.Source.DiskImageRef)
+		imageName := diskImageState(*disk.Spec.Source.DiskImageRef)
 		diags = setDiag(d, "image", imageName, diags)
 	}
 

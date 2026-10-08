@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `evroc_custom_disk_image` resource: register a bucket object as a custom disk image, tied to the bucket and bucket service account that hold it, optionally pinned to an object version
+- `evroc_custom_disk_image` data source: look up an existing image by name; exposes its source bucket, object path and version, default disk size and readiness
+- `evroc_bucket`, `evroc_bucket_service_account`: `fqid`
+- `evroc_disk`: use registered custom images through the existing `image` attribute; resource and data-source reads preserve the full reference.
+- `evroc_disk_images`: `rocky_10_1_1` and `sles_16_0_1`
+
+### Changed
+- Upgrade `evroc-go-sdk` to v0.9.2.
+
+### Fixed
+- `evroc_disk`: an `image` that is no longer offered fails at plan time instead of creating a blank disk
+- `evroc_bucket`: changing `object_retention_mode` back to `Disabled`, or away from `Locking`, plans a replacement instead of failing at apply
+
+### Documentation
+- `evroc_custom_disk_image`: example of a Kubernetes node pool booted from a baked image, with the bucket, service account and version-pinned registration managed by Terraform
+- `evroc_disk`: correct `image` examples
+
+## [0.9.6] - 2026-10-05
+
+### Added
+- `evroc_organization_quota`: `compute_gpus` and `usage_gpus` expose GPU quota and usage per GPU model, so GPU quota can be checked at plan time; both are empty maps (not null) when the organization has no GPU quota or usage
+
+### Documentation
+- `evroc_organization_quota`: example that checks GPU quota in a precondition before the boot disk is created
+
 ## [0.9.5] - 2026-09-25
 
 ### Fixed
