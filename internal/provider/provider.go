@@ -99,6 +99,7 @@ func New(version string) func() *schema.Provider {
 
 			ResourcesMap: map[string]*schema.Resource{
 				"evroc_disk":                       resourceDisk(),
+				"evroc_custom_disk_image":          resourceCustomDiskImage(),
 				"evroc_snapshot":                   resourceSnapshot(),
 				"evroc_vpc":                        resourceVPC(),
 				"evroc_subnet":                     resourceSubnet(),
@@ -124,6 +125,7 @@ func New(version string) func() *schema.Provider {
 			},
 
 			DataSourcesMap: map[string]*schema.Resource{
+				"evroc_custom_disk_image":             dataSourceCustomDiskImage(),
 				"evroc_disk":                          dataSourceDisk(),
 				"evroc_snapshot":                      dataSourceSnapshot(),
 				"evroc_vpc":                           dataSourceVPC(),

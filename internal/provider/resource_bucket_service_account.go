@@ -70,6 +70,11 @@ func resourceBucketServiceAccount() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"fqid": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Fully qualified resource ID (FQID). Use this to reference this resource from other resources.",
+			},
 			"service_account_id": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -183,6 +188,7 @@ func resourceBucketServiceAccountRead(ctx context.Context, d *schema.ResourceDat
 	diags = setDiag(d, "project", resolveProject(d, config), diags)
 	diags = setDiag(d, "region", derefString(sa.Metadata.Region), diags)
 	diags = setDiag(d, "service_account_id", sa.Metadata.Uid.String(), diags)
+	diags = setDiag(d, "fqid", storageRef(client, "bucketServiceAccounts", sa.Metadata.Id), diags)
 	diags = setDiag(d, "created_at", sa.Metadata.CreationTimestamp.Format(time.RFC3339), diags)
 
 	if sa.Spec.Buckets != nil {

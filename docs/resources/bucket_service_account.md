@@ -31,6 +31,7 @@ Manages an evroc bucket service account for S3-compatible access credentials. Cr
 
 - `access_key_id` (String, Sensitive) S3 access key ID.
 - `created_at` (String) Timestamp when the service account was created.
+- `fqid` (String) Fully qualified resource ID (FQID). Use this to reference this resource from other resources.
 - `credentials_secret` (String) Identifier of the generated S3 credentials. Used by the `evroc_bucket_service_account_secret` data source for backward compatibility; new configurations can use `access_key_id` and `secret_access_key` directly from this resource.
 - `id` (String) The ID of this resource.
 - `secret_access_key` (String, Sensitive) S3 secret access key.
