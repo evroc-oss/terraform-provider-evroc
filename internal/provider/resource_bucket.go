@@ -22,6 +22,13 @@ func resourceBucket() *schema.Resource {
 		UpdateContext: resourceBucketUpdate,
 		DeleteContext: resourceBucketDelete,
 		CustomizeDiff: func(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+			// The API never lets object_retention_mode go back to Disabled, or change at all once Locking.
+			if old, new := d.GetChange("object_retention_mode"); d.Id() != "" && old != new &&
+				(new == string(storagetypes.Disabled) || old == string(storagetypes.Locking)) {
+				if err := d.ForceNew("object_retention_mode"); err != nil {
+					return err
+				}
+			}
 			if !d.NewValueKnown("lifecycle_rule") {
 				return nil
 			}
@@ -57,7 +64,7 @@ func resourceBucket() *schema.Resource {
 				Optional:         true,
 				Default:          "Disabled",
 				ValidateDiagFunc: validateObjectRetentionMode(),
-				Description:      "Object retention mode: Disabled, Versioned, or Locking.",
+				Description:      "Object retention mode: Disabled, Versioned, or Locking. Changing it back to Disabled, or away from Locking, replaces the bucket.",
 			},
 			"object_locking": {
 				Type:        schema.TypeList,
@@ -101,6 +108,11 @@ func resourceBucket() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+			},
+			"fqid": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Fully qualified resource ID (FQID). Use this to reference this resource from other resources.",
 			},
 			"bucket_id": {
 				Type:        schema.TypeString,
@@ -207,6 +219,7 @@ func resourceBucketRead(ctx context.Context, d *schema.ResourceData, meta interf
 	diags = setDiag(d, "project", resolveProject(d, config), diags)
 	diags = setDiag(d, "region", derefString(bucket.Metadata.Region), diags)
 	diags = setDiag(d, "bucket_id", bucket.Metadata.Uid.String(), diags)
+	diags = setDiag(d, "fqid", storageRef(client, "buckets", bucket.Metadata.Id), diags)
 	diags = setDiag(d, "created_at", bucket.Metadata.CreationTimestamp.Format(time.RFC3339), diags)
 
 	// Always set object_retention_mode (default to "Disabled" if nil)

@@ -5,13 +5,13 @@ package provider
 
 import (
 	"context"
-	"path"
 	"time"
 
 	"github.com/evroc-oss/evroc-go-sdk/compute"
 	computetypes "github.com/evroc-oss/evroc-go-sdk/types/compute"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceDisk() *schema.Resource {
@@ -56,11 +56,12 @@ func resourceDisk() *schema.Resource {
 				Description:      "Size of the disk in GB. Can be increased in place; decreasing it forces a new resource to be created.",
 			},
 			"image": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"snapshot"},
-				Description:   "OS image for the disk (e.g., ubuntu-24.04, rocky-9-6). Mutually exclusive with snapshot.",
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				ConflictsWith:    []string{"snapshot"},
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringIsNotEmpty),
+				Description:      "Stock OS image name (e.g., ubuntu.24-04.1) or custom image reference (/compute/projects/<project>/regions/<region>/customDiskImages/<name>). Custom images must belong to the disk project and region. Mutually exclusive with snapshot.",
 			},
 			"snapshot": {
 				Type:             schema.TypeString,
@@ -204,12 +205,10 @@ func resourceDiskRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		diags = setDiag(d, "size", int(disk.Spec.DiskSize.Amount), diags)
 	}
 
-	// Set image if present (DiskImageRef is a string reference path)
-	// API returns full path like "/compute/global/diskImages/evroc/ubuntu-minimal.24-04.1"
-	// Extract just the image name (last part of path)
+	// Preserve custom refs so refresh/import cannot turn them into stock image names.
 	if disk.Spec.Source != nil {
 		if disk.Spec.Source.DiskImageRef != nil {
-			imageName := path.Base(*disk.Spec.Source.DiskImageRef)
+			imageName := diskImageState(*disk.Spec.Source.DiskImageRef)
 			diags = setDiag(d, "image", imageName, diags)
 		}
 		if disk.Spec.Source.SnapshotRef != nil {

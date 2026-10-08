@@ -1,0 +1,9 @@
+node_image_name           = "k8s-node-ubuntu2404-v1.35.0"
+node_image_object         = "images/k8s-node-ubuntu2404-v1.35.0.qcow2"
+node_image_object_version = "3HL4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo"
+pool_name            = "workers"
+node_count           = 3
+node_flavor          = "a1a.m"
+ssh_public_key       = "ssh-ed25519 AAAA... ops@example.com"
+security_group_fqids = ["/networking/projects/my-project/regions/se-sto/securityGroups/k8s-nodes"]
+kubeadm_join_command = "kubeadm join 10.0.0.10:6443 --token ... --discovery-token-ca-cert-hash sha256:..."

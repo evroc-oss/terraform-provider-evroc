@@ -1,0 +1,4 @@
+#cloud-config
+hostname: ${hostname}
+runcmd:
+  - [sh, -c, "${join_command}"]

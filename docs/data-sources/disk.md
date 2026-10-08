@@ -30,5 +30,5 @@ Get information about an existing evroc disk.
 - `disk_id` (String) Unique identifier (UUID) of the disk.
 - `fqid` (String) Fully qualified resource ID (FQID).
 - `id` (String) The ID of this resource.
-- `image` (String) OS image used for the disk.
+- `image` (String) Stock OS image name or fully qualified custom image reference used for the disk.
 - `size` (Number) Size of the disk in GB.

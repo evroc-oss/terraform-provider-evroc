@@ -6,6 +6,7 @@ package provider
 import (
 	"fmt"
 	"path"
+	"strings"
 	"time"
 
 	evroc "github.com/evroc-oss/evroc-go-sdk"
@@ -24,12 +25,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+// diskImageState preserves scoped custom image references while retaining the
+// existing short-name representation for stock images.
+func diskImageState(ref string) string {
+	if strings.HasPrefix(ref, "/compute/projects/") {
+		return ref
+	}
+	return path.Base(ref)
+}
+
 // BuildDiskCreateRequest creates a properly formatted Disk request using SDK builder
 func BuildDiskCreateRequest(name string, sizeGB int, image, snapshot, zone string, userLabels map[string]string) *computetypes.DiskRequest {
 	builder := compute.NewDiskBuilder(name).
 		WithSizeGB(int32(sizeGB))
 
-	if image != "" {
+	if strings.HasPrefix(image, "/compute/projects/") {
+		builder = builder.WithCustomImage(compute.CustomDiskImageRef(image))
+	} else if image != "" {
 		builder = builder.WithImage(image)
 	}
 
@@ -150,6 +162,59 @@ func BuildVirtualMachineCreateRequest(client *evroc.Client, name, flavor, bootDi
 	}
 
 	return req
+}
+
+// storageRef returns the fully qualified reference of a storage resource
+// (kind is "buckets" or "bucketServiceAccounts") in the client's project and
+// region. A value that is already an FQID is returned unchanged.
+func storageRef(client *evroc.Client, kind, name string) string {
+	if isFQID(name) {
+		return name
+	}
+	return fmt.Sprintf("/storage/projects/%s/regions/%s/%s/%s", client.DefaultProject(), client.DefaultRegion(), kind, name)
+}
+
+// BuildCustomDiskImageCreateRequest registers a bucket object as a custom disk
+// image. bucket and serviceAccount may be plain names or FQIDs.
+func BuildCustomDiskImageCreateRequest(client *evroc.Client, name, bucket, serviceAccount, objectPath, objectVersion, architecture string, defaultSizeGB int, description, osName, osVersion, imageVersion string, userLabels map[string]string) *computetypes.CustomDiskImageRequest {
+	builder := compute.NewCustomDiskImageBuilder(name,
+		storageRef(client, "buckets", bucket),
+		storageRef(client, "bucketServiceAccounts", serviceAccount),
+		objectPath).
+		WithDefaultDiskSizeGB(int32(defaultSizeGB)).
+		WithArchitecture(architecture)
+	if objectVersion != "" {
+		builder = builder.WithObjectVersion(objectVersion)
+	}
+	if description != "" {
+		builder = builder.WithDescription(description)
+	}
+	if osName != "" {
+		builder = builder.WithOSName(osName)
+	}
+	if osVersion != "" {
+		builder = builder.WithOSVersion(osVersion)
+	}
+	if imageVersion != "" {
+		builder = builder.WithImageVersion(imageVersion)
+	}
+	if len(userLabels) > 0 {
+		builder = builder.WithLabels(userLabels)
+	}
+	return builder.Build()
+}
+
+// customDiskImageSizeGB converts the image's default disk size to whole GB.
+func customDiskImageSizeGB(size computetypes.CustomDiskImageSpecDefaultDiskSize) int {
+	switch size.Unit {
+	case computetypes.CustomDiskImageSpecDefaultDiskSizeUnitTB:
+		return int(size.Amount) * 1024
+	case computetypes.CustomDiskImageSpecDefaultDiskSizeUnitMB:
+		return int(size.Amount) / 1024
+	case computetypes.CustomDiskImageSpecDefaultDiskSizeUnitKB:
+		return int(size.Amount) / (1024 * 1024)
+	}
+	return int(size.Amount)
 }
 
 // isFQID returns true if the value looks like a fully-qualified resource ID

@@ -33,6 +33,12 @@ func dataSourceOrganizationQuota() *schema.Resource {
 				Computed:    true,
 				Description: "Maximum block storage allowed (e.g., \"600 GB\").",
 			},
+			"compute_gpus": {
+				Type:        schema.TypeMap,
+				Computed:    true,
+				Elem:        &schema.Schema{Type: schema.TypeInt},
+				Description: "Maximum GPUs allowed, keyed by GPU model (e.g., \"nvidia.com/AD102GL_L40S\"), matching `gpu_model` in `evroc_compute_profiles`.",
+			},
 			// Networking limits
 			"networking_public_ips": {
 				Type:        schema.TypeInt,
@@ -60,6 +66,12 @@ func dataSourceOrganizationQuota() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "Current block storage usage.",
+			},
+			"usage_gpus": {
+				Type:        schema.TypeMap,
+				Computed:    true,
+				Elem:        &schema.Schema{Type: schema.TypeInt},
+				Description: "Current GPU usage, keyed by GPU model.",
 			},
 			"usage_public_ips": {
 				Type:        schema.TypeInt,
@@ -126,5 +138,26 @@ func dataSourceOrganizationQuotaRead(ctx context.Context, d *schema.ResourceData
 		}
 	}
 
+	// Always set the GPU maps, empty when the API omits them, so configs can
+	// lookup() a model without null checks.
+	var gpuLimits, gpuUsage map[string]int64
+	if q := quota.Spec.Quotas; q != nil && q.Compute != nil && q.Compute.Gpus != nil {
+		gpuLimits = *q.Compute.Gpus
+	}
+	if u := quota.Status.QuotaUsage; u != nil && u.Compute != nil && u.Compute.Gpus != nil {
+		gpuUsage = *u.Compute.Gpus
+	}
+	diags = setDiag(d, "compute_gpus", gpuCounts(gpuLimits), diags)
+	diags = setDiag(d, "usage_gpus", gpuCounts(gpuUsage), diags)
+
 	return diags
+}
+
+// gpuCounts converts a per-model GPU count map into a Terraform map value.
+func gpuCounts(m map[string]int64) map[string]interface{} {
+	out := make(map[string]interface{}, len(m))
+	for model, n := range m {
+		out[model] = int(n)
+	}
+	return out
 }
