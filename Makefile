@@ -4,8 +4,10 @@ HOSTNAME=github.com
 NAMESPACE=evroc-oss
 NAME=evroc
 BINARY=terraform-provider-${NAME}
-VERSION?=0.9.6
+VERSION?=0.9.7
 OS_ARCH?=linux_amd64
+# Fetch the go.mod toolchain even when the shell sets GOTOOLCHAIN=path
+export GOTOOLCHAIN=auto
 
 # Determine OS and architecture
 UNAME_S := $(shell uname -s)

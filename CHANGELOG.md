@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-10-15
+
+### Changed
+- Build with Go 1.26 and `golang.org/x/net` v0.60.0, which carry the October 2026 security fixes
+
+### Fixed
+- `evroc_lb_backend_service`: `health_check` `interval`, `timeout`, `healthy_threshold`, `unhealthy_threshold` and `http.expected_statuses` take the server-side value when unset instead of showing a diff on every plan
+- `evroc_lb_backend_service`: `health_check.target_port` defaults to the backend service `port` when unset, and `0` is rejected at plan time
+- `evroc_disk`: default create timeout raised from 10 to 15 minutes
+- `evroc_loadbalancer`, `evroc_lb_backend_pool`, `evroc_lb_backend_service`, `evroc_lb_l4_route`: updates retry on conflict when the object was modified concurrently (e.g. by the controller), re-reading it before each attempt, until the update timeout expires
+- `evroc_hotswap_disk_attachment`: creation waits until the disk is detached from any other virtual machine, so a disk can move between virtual machines in one apply
+
 ## [0.9.6] - 2026-10-08
 
 ### Added
@@ -260,7 +272,8 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.6...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.7...HEAD
+[0.9.7]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.7
 [0.9.6]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.6
 [0.9.5]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.5
 [0.7.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.7.1

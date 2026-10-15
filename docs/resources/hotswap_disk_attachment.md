@@ -3,12 +3,12 @@
 page_title: "evroc_hotswap_disk_attachment Resource - evroc"
 subcategory: ""
 description: |-
-  Manages a hot-swap disk attachment to an evroc virtual machine. Allows attaching and detaching disks without VM restart.
+  Manages a hot-swap disk attachment to an evroc virtual machine. Allows attaching and detaching disks without VM restart. If the disk is still attached to a virtual machine, creation waits until it is detached, so a disk can move between virtual machines in one apply.
 ---
 
 # evroc_hotswap_disk_attachment (Resource)
 
-Manages a hot-swap disk attachment to an evroc virtual machine. Allows attaching and detaching disks without VM restart.
+Manages a hot-swap disk attachment to an evroc virtual machine. Allows attaching and detaching disks without VM restart. If the disk is still attached to a virtual machine, creation waits until it is detached, so a disk can move between virtual machines in one apply.
 
 
 

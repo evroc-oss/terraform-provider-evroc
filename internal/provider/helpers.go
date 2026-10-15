@@ -4,6 +4,8 @@
 package provider
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -22,6 +24,7 @@ import (
 	networkingtypes "github.com/evroc-oss/evroc-go-sdk/types/networking"
 	storagetypes "github.com/evroc-oss/evroc-go-sdk/types/storage"
 	thinktypes "github.com/evroc-oss/evroc-go-sdk/types/think"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -32,6 +35,21 @@ func diskImageState(ref string) string {
 		return ref
 	}
 	return path.Base(ref)
+}
+
+// retryOnConflict runs fn until it succeeds, returns a non-409 error, or the
+// timeout expires. fn must re-read the resource on each attempt so the PATCH
+// carries a fresh resourceVersion.
+func retryOnConflict(ctx context.Context, timeout time.Duration, fn func() error) error {
+	return retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		if err := fn(); err != nil {
+			if errors.Is(err, evroc.ErrConflict) {
+				return retry.RetryableError(err)
+			}
+			return retry.NonRetryableError(err)
+		}
+		return nil
+	})
 }
 
 // BuildDiskCreateRequest creates a properly formatted Disk request using SDK builder

@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/evroc-oss/evroc-go-sdk/loadbalancer"
@@ -294,30 +295,38 @@ func resourceLoadBalancerUpdate(ctx context.Context, d *schema.ResourceData, met
 
 	lbClient := client.LoadBalancer()
 
-	lb, err := lbClient.LoadBalancers().Get(ctx, d.Id())
-	if err != nil {
-		return diag.Errorf("error reading load balancer %s: %s", d.Id(), err)
-	}
-
-	if d.HasChange("listener") {
-		listeners := expandLoadBalancerListeners(d.Get("listener").(*schema.Set))
-		lb.Spec.Listeners = &listeners
-	}
-
-	if d.HasChange("user_labels") {
-		if labels, ok := d.GetOk("user_labels"); ok {
-			userLabels := make(lbtypes.UserLabels)
-			for k, v := range labels.(map[string]interface{}) {
-				userLabels[k] = v.(string)
-			}
-			lb.Metadata.UserLabels = &userLabels
-		} else {
-			lb.Metadata.UserLabels = nil
+	// GET-then-PATCH: a concurrent write (e.g. the controller updating status)
+	// invalidates the fetched resourceVersion and the PATCH fails with 409.
+	err := retryOnConflict(ctx, d.Timeout(schema.TimeoutUpdate), func() error {
+		lb, err := lbClient.LoadBalancers().Get(ctx, d.Id())
+		if err != nil {
+			return fmt.Errorf("error reading load balancer %s: %w", d.Id(), err)
 		}
-	}
 
-	if _, err := lbClient.LoadBalancers().Patch(ctx, d.Id(), lb); err != nil {
-		return diag.Errorf("error updating load balancer %s: %s", d.Id(), err)
+		if d.HasChange("listener") {
+			listeners := expandLoadBalancerListeners(d.Get("listener").(*schema.Set))
+			lb.Spec.Listeners = &listeners
+		}
+
+		if d.HasChange("user_labels") {
+			if labels, ok := d.GetOk("user_labels"); ok {
+				userLabels := make(lbtypes.UserLabels)
+				for k, v := range labels.(map[string]interface{}) {
+					userLabels[k] = v.(string)
+				}
+				lb.Metadata.UserLabels = &userLabels
+			} else {
+				lb.Metadata.UserLabels = nil
+			}
+		}
+
+		if _, err := lbClient.LoadBalancers().Patch(ctx, d.Id(), lb); err != nil {
+			return fmt.Errorf("error updating load balancer %s: %w", d.Id(), err)
+		}
+		return nil
+	})
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	return resourceLoadBalancerRead(ctx, d, meta)
