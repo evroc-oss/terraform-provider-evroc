@@ -45,13 +45,13 @@ Provides an evroc load balancer backend service resource. A backend service defi
 
 Optional:
 
-- `healthy_threshold` (Number) Number of consecutive successes before marking an endpoint healthy.
+- `healthy_threshold` (Number) Number of consecutive successes before marking an endpoint healthy. Defaults to the server-side value when unset.
 - `http` (Block List, Max: 1) HTTP health check configuration. (see [below for nested schema](#nestedblock--health_check--http))
-- `interval` (String) Duration between health check attempts (e.g., "5s", "10s").
+- `interval` (String) Duration between health check attempts (e.g., "5s", "10s"). Defaults to the server-side value when unset.
 - `target_port` (Number) Backend endpoint port to check. Defaults to the backend service port.
 - `tcp` (Block List, Max: 1) TCP health check configuration. (see [below for nested schema](#nestedblock--health_check--tcp))
-- `timeout` (String) Duration allowed for one health check attempt (e.g., "3s").
-- `unhealthy_threshold` (Number) Number of consecutive failures before marking an endpoint unhealthy.
+- `timeout` (String) Duration allowed for one health check attempt (e.g., "3s"). Defaults to the server-side value when unset.
+- `unhealthy_threshold` (Number) Number of consecutive failures before marking an endpoint unhealthy. Defaults to the server-side value when unset.
 
 <a id="nestedblock--health_check--http"></a>
 ### Nested Schema for `health_check.http`
@@ -62,7 +62,7 @@ Required:
 
 Optional:
 
-- `expected_statuses` (List of Number) List of HTTP response status codes considered healthy.
+- `expected_statuses` (List of Number) List of HTTP response status codes considered healthy. Defaults to the server-side value when unset.
 - `host` (String) Host header value for the health check request.
 - `method` (String) HTTP method used for health checks (GET or HEAD).
 

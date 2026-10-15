@@ -11,7 +11,7 @@ Manage your evroc infrastructure as code with [Terraform](https://www.terraform.
 [![Tests](https://github.com/evroc-oss/terraform-provider-evroc/actions/workflows/ci.yml/badge.svg)](https://github.com/evroc-oss/terraform-provider-evroc/actions/workflows/ci.yml)
 [![Release](https://github.com/evroc-oss/terraform-provider-evroc/actions/workflows/release.yml/badge.svg)](https://github.com/evroc-oss/terraform-provider-evroc/actions/workflows/release.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/evroc-oss/terraform-provider-evroc)](https://goreportcard.com/report/github.com/evroc-oss/terraform-provider-evroc)
-[![Go Version](https://img.shields.io/badge/go-1.25-blue)](https://github.com/evroc-oss/terraform-provider-evroc/blob/main/go.mod)
+[![Go Version](https://img.shields.io/badge/go-1.26-blue)](https://github.com/evroc-oss/terraform-provider-evroc/blob/main/go.mod)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Terraform Registry](https://img.shields.io/badge/Terraform-Registry-purple.svg)](https://registry.terraform.io/providers/evroc-oss/evroc/latest)
 [![OpenTofu Registry](https://img.shields.io/badge/OpenTofu-Registry-purple.svg)](https://github.com/opentofu/registry/blob/main/providers/e/evroc-oss/evroc.json)
@@ -39,7 +39,7 @@ Declaratively manage your evroc cloud infrastructure — provision VMs, configur
 
 - [Terraform](https://www.terraform.io/downloads.html) 1.0+ or [OpenTofu](https://opentofu.org/) 1.9+
 - evroc cloud account with API access
-- Go 1.25+ (for building from source only)
+- Go 1.26+ (for building from source only)
 
 ## Installation
 

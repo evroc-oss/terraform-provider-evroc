@@ -208,3 +208,51 @@ func TestLoadBalancerBackendNetworkValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadBalancerUpdateRetriesConflict(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		failStatus  int
+		wantPatches int
+		wantErr     bool
+	}{
+		{"conflict is retried", http.StatusConflict, 2, false},
+		{"other errors are not retried", http.StatusBadRequest, 1, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ms := newMockServer()
+			defer ms.close()
+			config := newTestProviderConfig(t, ms.server.URL)
+			d := schema.TestResourceDataRaw(t, resourceLoadBalancer().Schema, loadBalancerTestConfig(false))
+			d.SetId("test-lb")
+			lb := mockLoadBalancer("test-lb")
+			gets, patches := 0, 0
+			ms.mux.HandleFunc("/loadbalancer/v1alpha1/projects/test-project/regions/se-sto/loadBalancers/test-lb", func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodPatch {
+					patches++
+					if patches == 1 {
+						respondJSON(w, tc.failStatus, map[string]string{"reason": "the object has been modified"})
+						return
+					}
+				} else {
+					gets++
+				}
+				respondJSON(w, http.StatusOK, lb)
+			})
+			if err := d.Set("user_labels", map[string]interface{}{"owner": "test"}); err != nil {
+				t.Fatal(err)
+			}
+			diags := resourceLoadBalancerUpdate(context.Background(), d, config)
+			if diags.HasError() != tc.wantErr {
+				t.Fatalf("diags = %v, wantErr %v", diags, tc.wantErr)
+			}
+			if patches != tc.wantPatches {
+				t.Fatalf("patches = %d, want %d", patches, tc.wantPatches)
+			}
+			// Each attempt must re-read the object to pick up a fresh resourceVersion.
+			if !tc.wantErr && gets < 2 {
+				t.Fatalf("gets = %d, want re-read before retrying PATCH", gets)
+			}
+		})
+	}
+}

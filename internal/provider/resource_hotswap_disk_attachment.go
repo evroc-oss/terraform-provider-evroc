@@ -5,16 +5,22 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"path"
+	"strings"
 	"time"
 
+	evroc "github.com/evroc-oss/evroc-go-sdk"
 	computetypes "github.com/evroc-oss/evroc-go-sdk/types/compute"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceHotswapDiskAttachment() *schema.Resource {
 	return &schema.Resource{
-		Description: "Manages a hot-swap disk attachment to an evroc virtual machine. Allows attaching and detaching disks without VM restart.",
+		Description: "Manages a hot-swap disk attachment to an evroc virtual machine. Allows attaching and detaching disks without VM restart. " +
+			"If the disk is still attached to a virtual machine, creation waits until it is detached, so a disk can move between virtual machines in one apply.",
 
 		CreateContext: resourceHotswapDiskAttachmentCreate,
 		ReadContext:   resourceHotswapDiskAttachmentRead,
@@ -122,6 +128,11 @@ func resourceHotswapDiskAttachmentCreate(ctx context.Context, d *schema.Resource
 		}
 	}
 
+	timeout := d.Timeout(schema.TimeoutCreate)
+	if err := waitForDiskDetached(ctx, client, diskName, vmName, timeout); err != nil {
+		return diag.Errorf("error waiting for disk %s to be detached: %s", diskName, err)
+	}
+
 	req := BuildDiskAttachmentCreateRequest(client, name, vmName, diskName, userLabels)
 
 	attachment, err := client.Compute().HotswapDiskAttachments().Create(ctx, req)
@@ -133,7 +144,6 @@ func resourceHotswapDiskAttachmentCreate(ctx context.Context, d *schema.Resource
 	d.Set("project", resolveProject(d, config))
 
 	// Wait for attachment to be ready and capture the ready resource
-	timeout := d.Timeout(schema.TimeoutCreate)
 	readyAttachment, err := client.Compute().HotswapDiskAttachments().WaitForReady(ctx, name, timeout)
 	if err != nil {
 		return diag.Errorf("error waiting for disk attachment %s to be ready: %s", name, err)
@@ -244,4 +254,33 @@ func resourceHotswapDiskAttachmentDelete(ctx context.Context, d *schema.Resource
 
 	d.SetId("")
 	return nil
+}
+
+// waitForDiskDetached waits until no other virtual machine uses the disk. When a disk
+// moves between VMs in one apply, the old attachment is deleted in parallel
+// with this create; attaching before it is gone would reference the disk twice.
+func waitForDiskDetached(ctx context.Context, client *evroc.Client, diskName, vmName string, timeout time.Duration) error {
+	return retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		disk, err := client.Compute().Disks().Get(ctx, path.Base(diskName))
+		if err != nil {
+			if isNotFoundError(err) {
+				// Let the create call report a missing disk.
+				return nil
+			}
+			return retry.NonRetryableError(err)
+		}
+		if disk.Status.DiskUsage == nil || len(*disk.Status.DiskUsage) == 0 {
+			return nil
+		}
+		vms := make([]string, 0, len(*disk.Status.DiskUsage))
+		for _, u := range *disk.Status.DiskUsage {
+			if !suppressFQIDDiff("", u.VirtualMachineRef, vmName, nil) {
+				vms = append(vms, path.Base(u.VirtualMachineRef))
+			}
+		}
+		if len(vms) == 0 {
+			return nil
+		}
+		return retry.RetryableError(fmt.Errorf("disk is still attached to %s", strings.Join(vms, ", ")))
+	})
 }

@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	lbtypes "github.com/evroc-oss/evroc-go-sdk/types/loadbalancer"
@@ -171,29 +172,37 @@ func resourceLBL4RouteUpdate(ctx context.Context, d *schema.ResourceData, meta i
 
 	lbClient := client.LoadBalancer()
 
-	route, err := lbClient.L4Routes().Get(ctx, d.Id())
-	if err != nil {
-		return diag.Errorf("error reading L4 route %s: %s", d.Id(), err)
-	}
-
-	if d.HasChange("default_backend_service_ref") {
-		route.Spec.DefaultBackendServiceRef = d.Get("default_backend_service_ref").(string)
-	}
-
-	if d.HasChange("user_labels") {
-		if labels, ok := d.GetOk("user_labels"); ok {
-			userLabels := make(lbtypes.UserLabels)
-			for k, v := range labels.(map[string]interface{}) {
-				userLabels[k] = v.(string)
-			}
-			route.Metadata.UserLabels = &userLabels
-		} else {
-			route.Metadata.UserLabels = nil
+	// GET-then-PATCH: a concurrent write (e.g. the controller updating status)
+	// invalidates the fetched resourceVersion and the PATCH fails with 409.
+	err := retryOnConflict(ctx, d.Timeout(schema.TimeoutUpdate), func() error {
+		route, err := lbClient.L4Routes().Get(ctx, d.Id())
+		if err != nil {
+			return fmt.Errorf("error reading L4 route %s: %w", d.Id(), err)
 		}
-	}
 
-	if _, err := lbClient.L4Routes().Patch(ctx, d.Id(), route); err != nil {
-		return diag.Errorf("error updating L4 route %s: %s", d.Id(), err)
+		if d.HasChange("default_backend_service_ref") {
+			route.Spec.DefaultBackendServiceRef = d.Get("default_backend_service_ref").(string)
+		}
+
+		if d.HasChange("user_labels") {
+			if labels, ok := d.GetOk("user_labels"); ok {
+				userLabels := make(lbtypes.UserLabels)
+				for k, v := range labels.(map[string]interface{}) {
+					userLabels[k] = v.(string)
+				}
+				route.Metadata.UserLabels = &userLabels
+			} else {
+				route.Metadata.UserLabels = nil
+			}
+		}
+
+		if _, err := lbClient.L4Routes().Patch(ctx, d.Id(), route); err != nil {
+			return fmt.Errorf("error updating L4 route %s: %w", d.Id(), err)
+		}
+		return nil
+	})
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	return resourceLBL4RouteRead(ctx, d, meta)

@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	lbtypes "github.com/evroc-oss/evroc-go-sdk/types/loadbalancer"
@@ -182,35 +183,43 @@ func resourceLBBackendPoolUpdate(ctx context.Context, d *schema.ResourceData, me
 
 	lbClient := client.LoadBalancer()
 
-	pool, err := lbClient.BackendPools().Get(ctx, d.Id())
+	// GET-then-PATCH: a concurrent write (e.g. the controller updating status)
+	// invalidates the fetched resourceVersion and the PATCH fails with 409.
+	err := retryOnConflict(ctx, d.Timeout(schema.TimeoutUpdate), func() error {
+		pool, err := lbClient.BackendPools().Get(ctx, d.Id())
+		if err != nil {
+			return fmt.Errorf("error reading backend pool %s: %w", d.Id(), err)
+		}
+
+		if d.HasChange("backend_refs") {
+			var desiredRefs []string
+			if refs, ok := d.GetOk("backend_refs"); ok {
+				for _, r := range refs.(*schema.Set).List() {
+					desiredRefs = append(desiredRefs, r.(string))
+				}
+			}
+			pool.Spec.BackendRefs = &desiredRefs
+		}
+
+		if d.HasChange("user_labels") {
+			if labels, ok := d.GetOk("user_labels"); ok {
+				userLabels := make(lbtypes.UserLabels)
+				for k, v := range labels.(map[string]interface{}) {
+					userLabels[k] = v.(string)
+				}
+				pool.Metadata.UserLabels = &userLabels
+			} else {
+				pool.Metadata.UserLabels = nil
+			}
+		}
+
+		if _, err := lbClient.BackendPools().Patch(ctx, d.Id(), pool); err != nil {
+			return fmt.Errorf("error updating backend pool %s: %w", d.Id(), err)
+		}
+		return nil
+	})
 	if err != nil {
-		return diag.Errorf("error reading backend pool %s: %s", d.Id(), err)
-	}
-
-	if d.HasChange("backend_refs") {
-		var desiredRefs []string
-		if refs, ok := d.GetOk("backend_refs"); ok {
-			for _, r := range refs.(*schema.Set).List() {
-				desiredRefs = append(desiredRefs, r.(string))
-			}
-		}
-		pool.Spec.BackendRefs = &desiredRefs
-	}
-
-	if d.HasChange("user_labels") {
-		if labels, ok := d.GetOk("user_labels"); ok {
-			userLabels := make(lbtypes.UserLabels)
-			for k, v := range labels.(map[string]interface{}) {
-				userLabels[k] = v.(string)
-			}
-			pool.Metadata.UserLabels = &userLabels
-		} else {
-			pool.Metadata.UserLabels = nil
-		}
-	}
-
-	if _, err := lbClient.BackendPools().Patch(ctx, d.Id(), pool); err != nil {
-		return diag.Errorf("error updating backend pool %s: %s", d.Id(), err)
+		return diag.FromErr(err)
 	}
 
 	return resourceLBBackendPoolRead(ctx, d, meta)

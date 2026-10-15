@@ -5,11 +5,14 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"time"
 
 	lbtypes "github.com/evroc-oss/evroc-go-sdk/types/loadbalancer"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceLBBackendService() *schema.Resource {
@@ -87,28 +90,33 @@ func resourceLBBackendService() *schema.Resource {
 						"interval": {
 							Type:        schema.TypeString,
 							Optional:    true,
-							Description: "Duration between health check attempts (e.g., \"5s\", \"10s\").",
+							Computed:    true,
+							Description: "Duration between health check attempts (e.g., \"5s\", \"10s\"). Defaults to the server-side value when unset.",
 						},
 						"timeout": {
 							Type:        schema.TypeString,
 							Optional:    true,
-							Description: "Duration allowed for one health check attempt (e.g., \"3s\").",
+							Computed:    true,
+							Description: "Duration allowed for one health check attempt (e.g., \"3s\"). Defaults to the server-side value when unset.",
 						},
 						"target_port": {
 							Type:             schema.TypeInt,
 							Optional:         true,
-							ValidateDiagFunc: validatePort(),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.IntBetween(1, 65535)),
+							DiffSuppressFunc: suppressDefaultTargetPortDiff,
 							Description:      "Backend endpoint port to check. Defaults to the backend service port.",
 						},
 						"healthy_threshold": {
 							Type:        schema.TypeInt,
 							Optional:    true,
-							Description: "Number of consecutive successes before marking an endpoint healthy.",
+							Computed:    true,
+							Description: "Number of consecutive successes before marking an endpoint healthy. Defaults to the server-side value when unset.",
 						},
 						"unhealthy_threshold": {
 							Type:        schema.TypeInt,
 							Optional:    true,
-							Description: "Number of consecutive failures before marking an endpoint unhealthy.",
+							Computed:    true,
+							Description: "Number of consecutive failures before marking an endpoint unhealthy. Defaults to the server-side value when unset.",
 						},
 						"tcp": {
 							Type:        schema.TypeList,
@@ -156,7 +164,8 @@ func resourceLBBackendService() *schema.Resource {
 									"expected_statuses": {
 										Type:        schema.TypeList,
 										Optional:    true,
-										Description: "List of HTTP response status codes considered healthy.",
+										Computed:    true,
+										Description: "List of HTTP response status codes considered healthy. Defaults to the server-side value when unset.",
 										Elem: &schema.Schema{
 											Type: schema.TypeInt,
 										},
@@ -290,10 +299,14 @@ func expandHealthCheck(d *schema.ResourceData) *lbtypes.BackendserviceSpecHealth
 	if v, ok := hcMap["timeout"].(string); ok && v != "" {
 		hc.Timeout = &v
 	}
-	if v, ok := hcMap["target_port"].(int); ok && v != 0 {
-		p := int32(v)
-		hc.TargetPort = &p
+	// The API stores an omitted target port as 0, which never passes, so
+	// default it to the backend service port.
+	targetPort, _ := hcMap["target_port"].(int)
+	if targetPort == 0 {
+		targetPort = d.Get("port").(int)
 	}
+	p := int32(targetPort)
+	hc.TargetPort = &p
 	if v, ok := hcMap["healthy_threshold"].(int); ok && v != 0 {
 		t := int32(v)
 		hc.HealthyThreshold = &t
@@ -307,6 +320,12 @@ func expandHealthCheck(d *schema.ResourceData) *lbtypes.BackendserviceSpecHealth
 	expandHealthCheckHTTP(hcMap, hc)
 
 	return hc
+}
+
+// suppressDefaultTargetPortDiff hides the diff when target_port is unset and
+// the stored value is the backend service port the provider defaulted it to.
+func suppressDefaultTargetPortDiff(_, old, new string, d *schema.ResourceData) bool {
+	return (new == "" || new == "0") && old == strconv.Itoa(d.Get("port").(int))
 }
 
 func flattenHealthCheck(hc *lbtypes.BackendserviceSpecHealthCheck) []interface{} {
@@ -480,52 +499,60 @@ func resourceLBBackendServiceUpdate(ctx context.Context, d *schema.ResourceData,
 
 	lbClient := client.LoadBalancer()
 
-	svc, err := lbClient.BackendServices().Get(ctx, d.Id())
-	if err != nil {
-		return diag.Errorf("error reading backend service %s: %s", d.Id(), err)
-	}
-
-	if d.HasChange("port") {
-		svc.Spec.Port = int32(d.Get("port").(int))
-	}
-
-	if d.HasChange("backend_pool_ref") {
-		ref := d.Get("backend_pool_ref").(string)
-		svc.Spec.BackendPoolRef = &ref
-	}
-
-	if d.HasChange("proxy_protocol") {
-		pp := d.Get("proxy_protocol").(bool)
-		svc.Spec.ProxyProtocol = &pp
-	}
-
-	if d.HasChange("ip_protocol_selection") {
-		if v, ok := d.GetOk("ip_protocol_selection"); ok {
-			sel := lbtypes.BackendserviceSpecIpProtocolSelection(v.(string))
-			svc.Spec.IpProtocolSelection = &sel
-		} else {
-			svc.Spec.IpProtocolSelection = nil
+	// GET-then-PATCH: a concurrent write (e.g. the controller updating status)
+	// invalidates the fetched resourceVersion and the PATCH fails with 409.
+	err := retryOnConflict(ctx, d.Timeout(schema.TimeoutUpdate), func() error {
+		svc, err := lbClient.BackendServices().Get(ctx, d.Id())
+		if err != nil {
+			return fmt.Errorf("error reading backend service %s: %w", d.Id(), err)
 		}
-	}
 
-	if d.HasChange("health_check") {
-		svc.Spec.HealthCheck = expandHealthCheck(d)
-	}
+		if d.HasChange("port") {
+			svc.Spec.Port = int32(d.Get("port").(int))
+		}
 
-	if d.HasChange("user_labels") {
-		if labels, ok := d.GetOk("user_labels"); ok {
-			userLabels := make(lbtypes.UserLabels)
-			for k, v := range labels.(map[string]interface{}) {
-				userLabels[k] = v.(string)
+		if d.HasChange("backend_pool_ref") {
+			ref := d.Get("backend_pool_ref").(string)
+			svc.Spec.BackendPoolRef = &ref
+		}
+
+		if d.HasChange("proxy_protocol") {
+			pp := d.Get("proxy_protocol").(bool)
+			svc.Spec.ProxyProtocol = &pp
+		}
+
+		if d.HasChange("ip_protocol_selection") {
+			if v, ok := d.GetOk("ip_protocol_selection"); ok {
+				sel := lbtypes.BackendserviceSpecIpProtocolSelection(v.(string))
+				svc.Spec.IpProtocolSelection = &sel
+			} else {
+				svc.Spec.IpProtocolSelection = nil
 			}
-			svc.Metadata.UserLabels = &userLabels
-		} else {
-			svc.Metadata.UserLabels = nil
 		}
-	}
 
-	if _, err := lbClient.BackendServices().Patch(ctx, d.Id(), svc); err != nil {
-		return diag.Errorf("error updating backend service %s: %s", d.Id(), err)
+		if d.HasChange("health_check") {
+			svc.Spec.HealthCheck = expandHealthCheck(d)
+		}
+
+		if d.HasChange("user_labels") {
+			if labels, ok := d.GetOk("user_labels"); ok {
+				userLabels := make(lbtypes.UserLabels)
+				for k, v := range labels.(map[string]interface{}) {
+					userLabels[k] = v.(string)
+				}
+				svc.Metadata.UserLabels = &userLabels
+			} else {
+				svc.Metadata.UserLabels = nil
+			}
+		}
+
+		if _, err := lbClient.BackendServices().Patch(ctx, d.Id(), svc); err != nil {
+			return fmt.Errorf("error updating backend service %s: %w", d.Id(), err)
+		}
+		return nil
+	})
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	return resourceLBBackendServiceRead(ctx, d, meta)

@@ -5,7 +5,7 @@ This guide explains how to run acceptance tests for the evroc Terraform provider
 ## Prerequisites
 
 1. **evroc Account** with API credentials
-2. **Go** >= 1.25
+2. **Go** >= 1.26
 3. **Make** (optional, for convenience)
 
 ## Setting Up Credentials
@@ -196,7 +196,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.26'
 
       - name: Run acceptance tests
         env:
