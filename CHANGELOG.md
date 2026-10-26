@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-10-26
+
+### Security
+- Build with Go 1.26.10, whose `crypto/x509` rejects certificate chains through the compromised eMudhra intermediate CAs (CVE-2026-111943).
+
 ## [0.9.7] - 2026-10-15
 
 ### Changed
@@ -272,7 +277,7 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.7...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.8...HEAD
 [0.9.7]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.7
 [0.9.6]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.6
 [0.9.5]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.5
@@ -290,3 +295,4 @@ Initial public release of the evroc Terraform Provider.
 [0.9.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.2
 [0.9.3]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.3
 [0.9.4]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.4
+[0.9.8]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.8
