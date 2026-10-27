@@ -39,17 +39,16 @@ func TestAccEvrocDiskImages(t *testing.T) {
 }
 
 func mockDiskImage(id string) computetypes.Diskimage {
-	osArch := computetypes.Amd64
 	return computetypes.Diskimage{
 		ApiVersion: "compute/v1beta2",
 		Kind:       "DiskImage",
 		Metadata:   computetypes.GlobalMetadataResponse{Id: id},
 		Spec: computetypes.DiskimageSpec{
-			DefaultSize: computetypes.DiskimageSpecDefaultSize{Amount: 10, Unit: "GB"},
-			OsArch:      &osArch,
-			OsImage:     id,
-			OsVersion:   "1",
-			Version:     1,
+			Architecture:    computetypes.Amd64,
+			DefaultDiskSize: computetypes.DiskimageSpecDefaultDiskSize{Amount: 10, Unit: "GB"},
+			OsImage:         id,
+			OsVersion:       "1",
+			Version:         1,
 		},
 	}
 }

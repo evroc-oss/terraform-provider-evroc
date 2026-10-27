@@ -14,7 +14,7 @@ Acceptance tests require real evroc API credentials. **Never commit credentials 
 
 ### Authentication Methods
 
-The provider supports two authentication methods:
+The provider supports CLI/SDK configuration, service-account credentials, tokens, and deprecated username/password authentication. For these tests, use an authenticated CLI configuration or set `EVROC_CONFIG_FILE` to an SDK configuration file containing your test project and region. The alternatives below are also supported.
 
 #### Option 1: API Token (Recommended)
 
@@ -66,6 +66,23 @@ Or directly:
 ```bash
 TF_ACC=1 go test ./internal/provider -v -timeout 120m
 ```
+
+### SDK v0.10.1 feature coverage
+
+The feature acceptance tests use real APIs and require KMS key management,
+IAM service-account management, Think model read access, Compute, and
+load-balancer permissions.
+They create uniquely named keys, credentials, a VM and a disk, and destroy them
+at the end. The health-check case also creates a backend pool and service.
+KMS destruction verifies scheduled deletion; keys remain until the
+platform's deletion grace period ends.
+
+```bash
+TF_ACC=1 go test ./internal/provider -v -timeout 60m \
+  -run 'TestAccEvroc(KMSKey|ServiceAccountCredential_HMAC|ThinkSharedModels|VirtualMachineConsoleLogs|LBBackendService_HealthCheckProxyProtocol)$'
+```
+
+Shared-model sunset dates and console-log contents are covered by mock tests.
 
 ### Specific Resource Tests
 

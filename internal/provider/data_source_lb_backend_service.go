@@ -100,11 +100,12 @@ func dataSourceLBBackendService() *schema.Resource {
 				Description: "Active health check configuration for this backend service.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"interval":            {Type: schema.TypeString, Computed: true},
-						"timeout":             {Type: schema.TypeString, Computed: true},
-						"target_port":         {Type: schema.TypeInt, Computed: true},
-						"healthy_threshold":   {Type: schema.TypeInt, Computed: true},
-						"unhealthy_threshold": {Type: schema.TypeInt, Computed: true},
+						"disable_proxy_protocol": {Type: schema.TypeBool, Computed: true},
+						"interval":               {Type: schema.TypeString, Computed: true},
+						"timeout":                {Type: schema.TypeString, Computed: true},
+						"target_port":            {Type: schema.TypeInt, Computed: true},
+						"healthy_threshold":      {Type: schema.TypeInt, Computed: true},
+						"unhealthy_threshold":    {Type: schema.TypeInt, Computed: true},
 						"tcp": {
 							Type:     schema.TypeList,
 							Computed: true,

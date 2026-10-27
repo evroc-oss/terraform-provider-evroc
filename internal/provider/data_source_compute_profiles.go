@@ -258,7 +258,9 @@ func dataSourceComputeProfilesRead(ctx context.Context, d *schema.ResourceData, 
 		if p.Spec.Gpus != nil {
 			detail["gpu_model"] = p.Spec.Gpus.Model
 			detail["gpu_quantity"] = int(p.Spec.Gpus.Quantity)
-			detail["gpu_local_disk_gb"] = int(p.Spec.Gpus.LocalDisk)
+			if p.Spec.Gpus.LocalDisk != nil {
+				detail["gpu_local_disk_gb"] = int(*p.Spec.Gpus.LocalDisk)
+			}
 		}
 		details = append(details, detail)
 	}

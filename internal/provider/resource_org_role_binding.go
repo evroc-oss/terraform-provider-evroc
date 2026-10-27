@@ -120,7 +120,7 @@ func resourceOrgRoleBindingCreate(ctx context.Context, d *schema.ResourceData, m
 	req := &iamtypes.OrgRequest{
 		ApiVersion: roleBindingAPIVersion,
 		Kind:       roleBindingKind,
-		Metadata: iamtypes.GlobalOrgMetadataRequest{
+		Metadata: iamtypes.OrgMetadataRequest{
 			Id:           name,
 			Organization: &org,
 		},

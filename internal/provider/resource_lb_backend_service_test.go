@@ -5,10 +5,14 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
+	lbtypes "github.com/evroc-oss/evroc-go-sdk/types/loadbalancer"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestLBBackendServiceAPIDefaultsNoDiff(t *testing.T) {
@@ -115,4 +119,79 @@ func TestLBBackendServiceTargetPortDefault(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHealthCheckDisableProxyProtocol(t *testing.T) {
+	res := resourceLBBackendService()
+	config := func(value interface{}) map[string]interface{} {
+		hc := map[string]interface{}{"tcp": []interface{}{map[string]interface{}{}}}
+		if value != nil {
+			hc["disable_proxy_protocol"] = value
+		}
+		return map[string]interface{}{"name": "svc", "port": 80, "proxy_protocol": true, "health_check": []interface{}{hc}}
+	}
+	// The override is always sent, so false explicitly restores inheritance.
+	for _, value := range []interface{}{nil, true, false} {
+		want := value == true
+		hc := expandHealthCheck(schema.TestResourceDataRaw(t, res.Schema, config(value)))
+		if hc.DisableProxyProtocol == nil || *hc.DisableProxyProtocol != want {
+			t.Errorf("%v: sent %v, want %v", value, hc.DisableProxyProtocol, want)
+		}
+	}
+	// An API response without the override clears a stale true.
+	d := schema.TestResourceDataRaw(t, res.Schema, config(true))
+	if err := d.Set("health_check", flattenHealthCheck(&lbtypes.BackendserviceSpecHealthCheck{})); err != nil {
+		t.Fatal(err)
+	}
+	if d.Get("health_check.0.disable_proxy_protocol") != false {
+		t.Error("stale override remains")
+	}
+	// Disabling or removing the override plans an update.
+	for _, value := range []interface{}{false, nil} {
+		d := schema.TestResourceDataRaw(t, res.Schema, config(true))
+		d.SetId("svc")
+		diff, err := res.Diff(context.Background(), d.State(), terraform.NewResourceConfigRaw(config(value)), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff == nil || diff.Attributes["health_check.0.disable_proxy_protocol"] == nil {
+			t.Errorf("%v: no update planned", value)
+		}
+	}
+}
+
+func TestAccEvrocLBBackendService_HealthCheckProxyProtocol(t *testing.T) {
+	name := fmt.Sprintf("tf-hc-%d", time.Now().UnixNano())
+	config := func(value string) string {
+		return fmt.Sprintf(`
+resource "evroc_lb_backend_pool" "test" { name = %q }
+resource "evroc_lb_backend_service" "test" {
+ name = %q
+ port = 80
+ proxy_protocol = true
+ backend_pool_ref = evroc_lb_backend_pool.test.fqid
+ health_check {
+  %s
+  tcp {}
+ }
+}
+data "evroc_lb_backend_service" "test" { name = evroc_lb_backend_service.test.name }
+`, name, name, value)
+	}
+	const address = "evroc_lb_backend_service.test"
+	var steps []resource.TestStep
+	for _, value := range []string{"true", "false", "true", ""} {
+		setting := ""
+		want := "false"
+		if value != "" {
+			setting = "disable_proxy_protocol = " + value
+			want = value
+		}
+		steps = append(steps, resource.TestStep{Config: config(setting), Check: resource.ComposeTestCheckFunc(
+			resource.TestCheckResourceAttr(address, "proxy_protocol", "true"),
+			resource.TestCheckResourceAttr(address, "health_check.0.disable_proxy_protocol", want),
+			resource.TestCheckResourceAttr("data.evroc_lb_backend_service.test", "health_check.0.disable_proxy_protocol", want),
+		)})
+	}
+	resource.Test(t, resource.TestCase{PreventPostDestroyRefresh: true, PreCheck: func() { testAccPreCheck(t) }, ProviderFactories: testAccProviderFactories, Steps: steps})
 }

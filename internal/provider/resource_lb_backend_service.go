@@ -87,6 +87,12 @@ func resourceLBBackendService() *schema.Resource {
 				Description: "Active health check configuration for this backend service.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"disable_proxy_protocol": {
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     false,
+							Description: "Omit PROXY protocol headers from health checks while preserving the backend traffic setting. Defaults to false (inherit the backend traffic setting).",
+						},
 						"interval": {
 							Type:        schema.TypeString,
 							Optional:    true,
@@ -292,6 +298,9 @@ func expandHealthCheck(d *schema.ResourceData) *lbtypes.BackendserviceSpecHealth
 	}
 	hcMap := hcList[0].(map[string]interface{})
 	hc := &lbtypes.BackendserviceSpecHealthCheck{}
+	// Send false explicitly so updates can restore inheritance after true.
+	disableProxyProtocol, _ := hcMap["disable_proxy_protocol"].(bool)
+	hc.DisableProxyProtocol = &disableProxyProtocol
 
 	if v, ok := hcMap["interval"].(string); ok && v != "" {
 		hc.Interval = &v
@@ -332,7 +341,10 @@ func flattenHealthCheck(hc *lbtypes.BackendserviceSpecHealthCheck) []interface{}
 	if hc == nil {
 		return nil
 	}
-	m := map[string]interface{}{}
+	m := map[string]interface{}{"disable_proxy_protocol": false}
+	if hc.DisableProxyProtocol != nil {
+		m["disable_proxy_protocol"] = *hc.DisableProxyProtocol
+	}
 
 	if hc.Interval != nil {
 		m["interval"] = *hc.Interval
@@ -480,6 +492,8 @@ func resourceLBBackendServiceRead(ctx context.Context, d *schema.ResourceData, m
 			}
 		}
 		diags = setDiag(d, "backends", backends, diags)
+	} else {
+		diags = setDiag(d, "backends", []map[string]interface{}{}, diags)
 	}
 
 	if svc.Spec.HealthCheck != nil {

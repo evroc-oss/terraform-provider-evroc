@@ -98,6 +98,7 @@ func New(version string) func() *schema.Provider {
 			},
 
 			ResourcesMap: map[string]*schema.Resource{
+				"evroc_kms_key":                    resourceKMSKey(),
 				"evroc_disk":                       resourceDisk(),
 				"evroc_custom_disk_image":          resourceCustomDiskImage(),
 				"evroc_snapshot":                   resourceSnapshot(),
@@ -125,6 +126,9 @@ func New(version string) func() *schema.Provider {
 			},
 
 			DataSourcesMap: map[string]*schema.Resource{
+				"evroc_virtual_machine_console_logs":  dataSourceVirtualMachineConsoleLogs(),
+				"evroc_think_shared_models":           dataSourceThinkSharedModels(),
+				"evroc_kms_key":                       dataSourceKMSKey(),
 				"evroc_custom_disk_image":             dataSourceCustomDiskImage(),
 				"evroc_disk":                          dataSourceDisk(),
 				"evroc_snapshot":                      dataSourceSnapshot(),

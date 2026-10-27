@@ -32,6 +32,12 @@ func dataSourceRoles() *schema.Resource {
 							Computed:    true,
 							Description: "Human-readable description of the role.",
 						},
+						roleResourcesAttribute: {
+							Type:        schema.TypeList,
+							Computed:    true,
+							Elem:        &schema.Schema{Type: schema.TypeString},
+							Description: "Resource kinds in service.resource form that the role can be limited to. An empty list means the role applies to the whole scope.",
+						},
 						"scope": {
 							Type:        schema.TypeString,
 							Computed:    true,
@@ -63,9 +69,10 @@ func dataSourceRolesRead(ctx context.Context, d *schema.ResourceData, meta inter
 				desc = *r.Description
 			}
 			items[i] = map[string]interface{}{
-				"id":          r.Id,
-				"description": desc,
-				"scope":       string(r.Scope),
+				"id":                   r.Id,
+				"description":          desc,
+				"scope":                string(r.Scope),
+				roleResourcesAttribute: r.Resources,
 			}
 		}
 	}

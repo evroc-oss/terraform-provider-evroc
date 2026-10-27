@@ -53,6 +53,7 @@ Read-Only:
 
 Read-Only:
 
+- `disable_proxy_protocol` (Boolean)
 - `healthy_threshold` (Number)
 - `http` (List of Object) (see [below for nested schema](#nestedobjatt--health_check--http))
 - `https` (List of Object) (see [below for nested schema](#nestedobjatt--health_check--https))

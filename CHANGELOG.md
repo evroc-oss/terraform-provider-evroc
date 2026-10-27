@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-27
+
+### Added
+- `evroc_kms_key` resource and data source: generated keys, activation/suspension, automatic rotation and expiry policies, version metadata, import of existing keys, and scheduled deletion
+- `evroc_service_account_credential`: HMAC-SigV4 credentials with sensitive one-time secrets; credential lookups report type, access key ID, and revocation time
+- `evroc_think_shared_models`: discover invocation aliases, capabilities, and sunset dates
+- `evroc_virtual_machine_console_logs`: explicit, sensitive access to the last 1,000 console lines
+- `evroc_lb_backend_service`: configure `health_check.disable_proxy_protocol`; also exposed by the backend-service data source
+- `evroc_organization_quota`: expose hotswap disk attachment limits and usage
+- `evroc_roles`: expose resource kinds each role can be restricted to
+
+### Changed
+- Use evroc Go SDK v0.10.1; role bindings use IAM API `v1beta2`
+
+### Fixed
+- `evroc_disk_images`: `os_arch`, `default_size_amount` and `default_size_unit` are populated again
+
 ## [0.9.8] - 2026-10-26
 
 ### Security
@@ -277,7 +294,7 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.9.8...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.10.0...HEAD
 [0.9.7]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.7
 [0.9.6]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.6
 [0.9.5]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.5
@@ -296,3 +313,4 @@ Initial public release of the evroc Terraform Provider.
 [0.9.3]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.3
 [0.9.4]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.4
 [0.9.8]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.8
+[0.10.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.10.0

@@ -51,8 +51,9 @@ func mockComputeProfile(id string) computetypes.Computeprofile {
 	}
 	// GPU series ("gn-" prefix) get a GPU spec, mirroring the real catalog.
 	if strings.HasPrefix(id, "gn-") {
+		localDisk := int32(100)
 		profile.Spec.Gpus = &computetypes.ComputeprofileSpecGpus{
-			LocalDisk: 100,
+			LocalDisk: &localDisk,
 			Model:     "l40s",
 			Quantity:  1,
 		}

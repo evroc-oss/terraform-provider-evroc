@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	roleFQIDPrefix        = "/iam/roles/"
-	roleBindingKind       = "RoleBinding"
-	roleBindingAPIVersion = "iam/v1beta1"
+	roleResourcesAttribute = "resources"
+	roleFQIDPrefix         = "/iam/roles/"
+	roleBindingKind        = "RoleBinding"
+	roleBindingAPIVersion  = "iam/v1beta2"
 )
 
 func normalizeRoleFQID(role string) string {
@@ -49,7 +50,7 @@ func roleEntrySchema() *schema.Resource {
 				DiffSuppressFunc: suppressRoleFQIDDiff,
 				Description:      "Role to grant. Can be a short name (e.g., \"computeOperator\") or full FQID (\"/iam/roles/computeOperator\").",
 			},
-			"resources": {
+			roleResourcesAttribute: {
 				Type:     schema.TypeList,
 				Optional: true,
 				Description: "Optional list of resource FQIDs the role is limited to. " +
@@ -149,7 +150,7 @@ func expandRoleEntries(raw []interface{}) []iamtypes.RoleEntry {
 		entry := iamtypes.RoleEntry{
 			Name: normalizeRoleFQID(m["role"].(string)),
 		}
-		if resList, ok := m["resources"].([]interface{}); ok && len(resList) > 0 {
+		if resList, ok := m[roleResourcesAttribute].([]interface{}); ok && len(resList) > 0 {
 			resources := make([]string, len(resList))
 			for j, r := range resList {
 				resources[j] = r.(string)
@@ -168,9 +169,9 @@ func flattenRoleEntries(entries []iamtypes.RoleEntry) []map[string]interface{} {
 			"role": e.Name,
 		}
 		if e.Resources != nil {
-			m["resources"] = *e.Resources
+			m[roleResourcesAttribute] = *e.Resources
 		} else {
-			m["resources"] = []string{}
+			m[roleResourcesAttribute] = []string{}
 		}
 		result[i] = m
 	}
@@ -196,7 +197,7 @@ func resourceRoleBindingCreate(ctx context.Context, d *schema.ResourceData, meta
 	req := &iamtypes.RolebindingRequest{
 		ApiVersion: roleBindingAPIVersion,
 		Kind:       roleBindingKind,
-		Metadata: iamtypes.GlobalProjectMetadataRequest{
+		Metadata: iamtypes.ProjectMetadataRequest{
 			Id:      name,
 			Project: &project,
 		},
