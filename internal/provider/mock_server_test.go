@@ -500,8 +500,8 @@ func mockProject(name string) *iamtypes.Project {
 
 func setupProjectHandlers(ms *mockServer, name string) {
 	project := mockProject(name)
-	resourcePath := fmt.Sprintf("/iam/v1beta1/projects/%s", name)
-	ms.mux.HandleFunc("/iam/v1beta1/projects", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/iam/v1beta2/projects/%s", name)
+	ms.mux.HandleFunc("/iam/v1beta2/projects", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
 			respondJSON(w, http.StatusCreated, project)
@@ -960,8 +960,8 @@ func mockServiceAccount(name string) *iamtypes.Serviceaccount {
 
 func setupServiceAccountHandlers(ms *mockServer, name string) {
 	sa := mockServiceAccount(name)
-	resourcePath := fmt.Sprintf("/iam/v1beta1/projects/test-project/serviceAccounts/%s", name)
-	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/serviceAccounts", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/iam/v1beta2/projects/test-project/serviceAccounts/%s", name)
+	ms.mux.HandleFunc("/iam/v1beta2/projects/test-project/serviceAccounts", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, sa)
 			return
@@ -1027,8 +1027,8 @@ func mockServiceAccountCredential(name string) *iamtypes.Serviceaccountcredentia
 
 func setupServiceAccountCredentialHandlers(ms *mockServer, name string) {
 	cred := mockServiceAccountCredential(name)
-	resourcePath := fmt.Sprintf("/iam/v1beta1/projects/test-project/serviceAccounts/test-sa/serviceAccountCredentials/%s", name)
-	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/serviceAccounts/test-sa/serviceAccountCredentials", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/iam/v1beta2/projects/test-project/serviceAccounts/test-sa/serviceAccountCredentials/%s", name)
+	ms.mux.HandleFunc("/iam/v1beta2/projects/test-project/serviceAccounts/test-sa/serviceAccountCredentials", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, cred)
 			return
@@ -1056,7 +1056,7 @@ func setupServiceAccountCredentialHandlers(ms *mockServer, name string) {
 
 func mockProjectRoleBinding() map[string]interface{} {
 	return map[string]interface{}{
-		"apiVersion": "iam/v1beta1",
+		"apiVersion": "iam/v1beta2",
 		"kind":       "RoleBinding",
 		"metadata": map[string]interface{}{
 			"id":                "rb-test",
@@ -1078,7 +1078,7 @@ func mockProjectRoleBinding() map[string]interface{} {
 
 func mockOrgRoleBinding() map[string]interface{} {
 	return map[string]interface{}{
-		"apiVersion": "iam/v1beta1",
+		"apiVersion": "iam/v1beta2",
 		"kind":       "RoleBinding",
 		"metadata": map[string]interface{}{
 			"id":                "org-rb-test",
@@ -1100,7 +1100,7 @@ func mockOrgRoleBinding() map[string]interface{} {
 
 func setupRoleBindingHandlers(ms *mockServer) {
 	// Project-scoped role binding CRUD
-	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/roleBindings/rb-test", func(w http.ResponseWriter, r *http.Request) {
+	ms.mux.HandleFunc("/iam/v1beta2/projects/test-project/roleBindings/rb-test", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			respondJSON(w, http.StatusOK, mockProjectRoleBinding())
@@ -1112,7 +1112,7 @@ func setupRoleBindingHandlers(ms *mockServer) {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
 	})
-	ms.mux.HandleFunc("/iam/v1beta1/projects/test-project/roleBindings", func(w http.ResponseWriter, r *http.Request) {
+	ms.mux.HandleFunc("/iam/v1beta2/projects/test-project/roleBindings", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, mockProjectRoleBinding())
 			return
@@ -1121,7 +1121,7 @@ func setupRoleBindingHandlers(ms *mockServer) {
 	})
 
 	// Organization-scoped role binding CRUD
-	ms.mux.HandleFunc("/iam/v1beta1/organizations/test-org/roleBindings/org-rb-test", func(w http.ResponseWriter, r *http.Request) {
+	ms.mux.HandleFunc("/iam/v1beta2/organizations/test-org/roleBindings/org-rb-test", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			respondJSON(w, http.StatusOK, mockOrgRoleBinding())
@@ -1133,7 +1133,7 @@ func setupRoleBindingHandlers(ms *mockServer) {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
 	})
-	ms.mux.HandleFunc("/iam/v1beta1/organizations/test-org/roleBindings", func(w http.ResponseWriter, r *http.Request) {
+	ms.mux.HandleFunc("/iam/v1beta2/organizations/test-org/roleBindings", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, mockOrgRoleBinding())
 			return
@@ -1142,7 +1142,7 @@ func setupRoleBindingHandlers(ms *mockServer) {
 	})
 
 	// Role catalog
-	ms.mux.HandleFunc("/iam/v1beta1/roles", func(w http.ResponseWriter, r *http.Request) {
+	ms.mux.HandleFunc("/iam/v1beta2/roles", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			respondJSON(w, http.StatusOK, map[string]interface{}{
 				"items": []map[string]interface{}{

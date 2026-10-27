@@ -93,23 +93,6 @@ address must stay the same.
 - `public_ipv4_address` (String) Assigned public IPv4 address of the load balancer.
 - `system_labels` (Map of String) System-managed labels automatically set by evroc (read-only).
 
-<a id="nestedblock--backend_network"></a>
-### Nested Schema for `backend_network`
-
-Required:
-
-- `vpc_ref` (String) Fully qualified reference to the VPC containing the backend VMs. Changing this forces a new resource to be created.
-- `subnet` (Block Set, Min: 1) Subnets to attach to in the selected VPC, with one subnet per deployment zone. Changing this forces a new resource to be created. (see [below for nested schema](#nestedblock--backend_network--subnet))
-
-<a id="nestedblock--backend_network--subnet"></a>
-### Nested Schema for `backend_network.subnet`
-
-Required:
-
-- `zone` (String) Zone to deploy to: a, b, or c. Changing this forces a new resource to be created.
-- `subnet_ref` (String) Fully qualified reference to the subnet in this zone. Changing this forces a new resource to be created.
-
-
 <a id="nestedblock--listener"></a>
 ### Nested Schema for `listener`
 
@@ -122,6 +105,24 @@ Required:
 Optional:
 
 - `name` (String) Name for this listener (e.g., 'web', 'api'). Must be unique per load balancer.
+
+
+<a id="nestedblock--backend_network"></a>
+### Nested Schema for `backend_network`
+
+Required:
+
+- `subnet` (Block Set, Min: 1) Subnets to attach to in the selected VPC, with one subnet per deployment zone. Changing this forces a new resource to be created. (see [below for nested schema](#nestedblock--backend_network--subnet))
+- `vpc_ref` (String) Fully qualified reference to the VPC containing the backend VMs. Changing this forces a new resource to be created.
+
+<a id="nestedblock--backend_network--subnet"></a>
+### Nested Schema for `backend_network.subnet`
+
+Required:
+
+- `subnet_ref` (String) Fully qualified reference to the subnet in this zone. Changing this forces a new resource to be created.
+- `zone` (String) Zone to deploy to: a, b, or c. Changing this forces a new resource to be created.
+
 
 
 <a id="nestedblock--timeouts"></a>

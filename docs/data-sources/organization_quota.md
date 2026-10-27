@@ -53,6 +53,7 @@ resource "evroc_disk" "boot" {
 
 - `compute_block_storage` (String) Maximum block storage allowed (e.g., "600 GB").
 - `compute_gpus` (Map of Number) Maximum GPUs allowed, keyed by GPU model (e.g., "nvidia.com/AD102GL_L40S"), matching `gpu_model` in `evroc_compute_profiles`.
+- `compute_hotswap_disk_attachments` (Number) Maximum hotswap disk attachments allowed. Zero when omitted by the API.
 - `compute_memory` (String) Maximum memory allowed (e.g., "600 GB").
 - `compute_vcpus` (Number) Maximum vCPUs allowed.
 - `id` (String) The ID of this resource.
@@ -60,6 +61,7 @@ resource "evroc_disk" "boot" {
 - `networking_public_ips` (Number) Maximum public IPs allowed.
 - `usage_block_storage` (String) Current block storage usage.
 - `usage_gpus` (Map of Number) Current GPU usage, keyed by GPU model.
+- `usage_hotswap_disk_attachments` (Number) Current hotswap disk attachment usage. Zero when omitted by the API.
 - `usage_load_balancers` (Number) Current load balancer usage.
 - `usage_memory` (String) Current memory usage.
 - `usage_public_ips` (Number) Current public IP usage.

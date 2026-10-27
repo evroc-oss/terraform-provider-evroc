@@ -6,6 +6,8 @@ package provider
 import (
 	"context"
 
+	quotatypes "github.com/evroc-oss/evroc-go-sdk/types/quotas"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -39,6 +41,11 @@ func dataSourceOrganizationQuota() *schema.Resource {
 				Elem:        &schema.Schema{Type: schema.TypeInt},
 				Description: "Maximum GPUs allowed, keyed by GPU model (e.g., \"nvidia.com/AD102GL_L40S\"), matching `gpu_model` in `evroc_compute_profiles`.",
 			},
+			"compute_hotswap_disk_attachments": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Maximum hotswap disk attachments allowed. Zero when omitted by the API.",
+			},
 			// Networking limits
 			"networking_public_ips": {
 				Type:        schema.TypeInt,
@@ -52,6 +59,11 @@ func dataSourceOrganizationQuota() *schema.Resource {
 				Description: "Maximum load balancers allowed.",
 			},
 			// Usage
+			"usage_hotswap_disk_attachments": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Current hotswap disk attachment usage. Zero when omitted by the API.",
+			},
 			"usage_vcpus": {
 				Type:        schema.TypeInt,
 				Computed:    true,
@@ -138,6 +150,8 @@ func dataSourceOrganizationQuotaRead(ctx context.Context, d *schema.ResourceData
 		}
 	}
 
+	diags = flattenHotswapQuota(d, quota, diags)
+
 	// Always set the GPU maps, empty when the API omits them, so configs can
 	// lookup() a model without null checks.
 	var gpuLimits, gpuUsage map[string]int64
@@ -160,4 +174,18 @@ func gpuCounts(m map[string]int64) map[string]interface{} {
 		out[model] = int(n)
 	}
 	return out
+}
+
+func flattenHotswapQuota(d *schema.ResourceData, quota *quotatypes.Orgquota, diags diag.Diagnostics) diag.Diagnostics {
+	var attachmentLimit, attachmentUsage int
+	if q := quota.Spec.Quotas; q != nil && q.Compute != nil && q.Compute.HotswapDiskAttachments != nil {
+		attachmentLimit = int(*q.Compute.HotswapDiskAttachments)
+	}
+	if u := quota.Status.QuotaUsage; u != nil && u.Compute != nil && u.Compute.HotswapDiskAttachments != nil {
+		attachmentUsage = int(*u.Compute.HotswapDiskAttachments)
+	}
+	diags = setDiag(d, "compute_hotswap_disk_attachments", attachmentLimit, diags)
+	diags = setDiag(d, "usage_hotswap_disk_attachments", attachmentUsage, diags)
+
+	return diags
 }

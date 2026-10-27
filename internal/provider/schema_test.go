@@ -460,19 +460,20 @@ func TestProviderSchema(t *testing.T) {
 	}
 
 	// Verify resource count
-	expectedResources := 24
+	expectedResources := 25
 	if len(p.ResourcesMap) != expectedResources {
 		t.Errorf("expected %d resources, got %d", expectedResources, len(p.ResourcesMap))
 	}
 
 	// Verify data source count
-	expectedDataSources := 31
+	expectedDataSources := 34
 	if len(p.DataSourcesMap) != expectedDataSources {
 		t.Errorf("expected %d data sources, got %d", expectedDataSources, len(p.DataSourcesMap))
 	}
 
 	// Verify all resources are registered
 	expectedResourceNames := []string{
+		"evroc_kms_key",
 		"evroc_disk",
 		"evroc_public_ip",
 		"evroc_virtual_machine",
@@ -501,6 +502,7 @@ func TestProviderSchema(t *testing.T) {
 
 	// Verify all data sources are registered
 	expectedDataSourceNames := []string{
+		"evroc_kms_key", "evroc_think_shared_models", "evroc_virtual_machine_console_logs",
 		"evroc_disk",
 		"evroc_public_ip",
 		"evroc_virtual_machine",

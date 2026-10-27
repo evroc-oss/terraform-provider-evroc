@@ -180,18 +180,14 @@ func dataSourceDiskImagesRead(ctx context.Context, d *schema.ResourceData, meta 
 		if img.Spec.GpuAffinities != nil {
 			gpuAffinities = *img.Spec.GpuAffinities
 		}
-		osArch := ""
-		if img.Spec.OsArch != nil {
-			osArch = string(*img.Spec.OsArch)
-		}
 		details = append(details, map[string]interface{}{
 			"name":                img.Metadata.Id,
 			"os_image":            img.Spec.OsImage,
 			"os_version":          img.Spec.OsVersion,
-			"os_arch":             osArch,
+			"os_arch":             string(img.Spec.Architecture),
 			"version":             int(img.Spec.Version),
-			"default_size_amount": int(img.Spec.DefaultSize.Amount),
-			"default_size_unit":   string(img.Spec.DefaultSize.Unit),
+			"default_size_amount": int(img.Spec.DefaultDiskSize.Amount),
+			"default_size_unit":   string(img.Spec.DefaultDiskSize.Unit),
 			"gpu_affinities":      gpuAffinities,
 		})
 	}

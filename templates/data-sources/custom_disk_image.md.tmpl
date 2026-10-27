@@ -1,0 +1,36 @@
+---
+page_title: "evroc_custom_disk_image Data Source - evroc"
+subcategory: ""
+description: |-
+  Looks up a registered custom disk image by name in the provider region.
+---
+
+# evroc_custom_disk_image (Data Source)
+
+Looks up an existing custom disk image by name. The image must already be registered.
+A missing image fails the lookup. This data source does not build or publish images.
+
+## Example Usage
+
+```terraform
+data "evroc_custom_disk_image" "node" {
+  name = "ubuntu-k8s-v1"
+}
+
+resource "evroc_disk" "boot" {
+  name  = "boot"
+  zone  = "a"
+  size  = 50 # At least the image's virtual disk size.
+  image = data.evroc_custom_disk_image.node.fqid
+}
+```
+
+The source attributes show what the registration points at. Add a `precondition` on
+`object_version != ""` if your policy requires pinned images.
+
+Project and region default to the provider configuration. Override `project` to
+look up an image in another project; use a provider alias for another region.
+The disk consuming the image must use the same project and region.
+Choose a versioned image name explicitly; changing the disk's image replaces it.
+
+{{ .SchemaMarkdown | trimspace }}

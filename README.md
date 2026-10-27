@@ -31,9 +31,11 @@ Declaratively manage your evroc cloud infrastructure — provision VMs, configur
 | Resource | What you can manage |
 |----------|-------------------|
 | **Compute** | Virtual machines, disks, disk attachments, placement groups |
-| **Networking** | Public IPs, security groups |
-| **Storage** | S3-compatible buckets and service accounts |
-| **IAM** | Projects, service accounts, role bindings |
+| **Networking** | VPCs, subnets, public IPs, security groups, and load balancers |
+| **Storage** | S3-compatible buckets, service accounts, and NFS file stores |
+| **IAM** | Projects, service accounts, JWT/HMAC credentials, role bindings |
+| **KMS** | Generated encryption keys, activation/suspension, automatic rotation and expiry |
+| **Think** | Dedicated inference instances, API keys, and model discovery |
 
 ## Requirements
 
@@ -216,7 +218,7 @@ provider "evroc" {}
 
 > **Creating a service account:** See the [`examples/service-account/`](examples/service-account/) directory for a complete walkthrough — create a service account, assign roles, generate credentials, and configure your CI/CD runner.
 
-> **Important:** Service account credentials have an expiration date (`expires_at`) and the private key is only returned once at creation time. Store it securely. Plan for credential rotation before expiry.
+> **Important:** Service account credentials have an expiration date (`expires_at`) and the private key or HMAC secret is only returned once at creation time. Terraform stores it in state; restrict state access. Plan for credential rotation before expiry.
 
 #### Option C: Explicit provider attributes
 
@@ -445,6 +447,13 @@ Complete, production-ready examples in the [`examples/`](examples/) directory:
 
 ## Documentation
 
+Provider `v0.10.0` uses evroc Go SDK `v0.10.1`. It adds [KMS key management](docs/resources/kms_key.md),
+[HMAC credentials](docs/resources/service_account_credential.md),
+[shared-model discovery](docs/data-sources/think_shared_models.md), and
+[console-log lookup](docs/data-sources/virtual_machine_console_logs.md).
+KMS key-material import and one-off rotation/trim actions remain SDK operations.
+
+
 ### Provider Configuration
 
 The provider supports multiple authentication methods (see [Quick Start](#1-authenticate-with-evroc) for details).
@@ -508,39 +517,70 @@ Then omit `access_key` and `secret_key` from the backend block.
 
 | Resource | Description |
 |----------|-------------|
-| `evroc_virtual_machine` | Virtual machine instances with networking |
-| `evroc_disk` | Persistent block storage volumes |
-| `evroc_hotswap_disk_attachment` | Attach disks to VMs (hot-attach supported) |
-| `evroc_public_ip` | Public IPv4 addresses |
-| `evroc_security_group` | Network firewall rules (ingress/egress) |
-| `evroc_placement_group` | VM placement strategies (spread) |
-| `evroc_bucket` | S3-compatible object storage |
-| `evroc_bucket_service_account` | S3 access credentials |
-| `evroc_project` | Project management |
-| `evroc_loadbalancer` | Layer 4 (TCP) load balancer with backend pool |
-| `evroc_service_account` | IAM service accounts for programmatic API access |
-| `evroc_service_account_credential` | Credentials (JWK key pairs) for service accounts |
-| `evroc_role_binding` | Bind IAM roles to users or service accounts |
+| [`evroc_kms_key`](docs/resources/kms_key.md) | Encryption keys, activation/suspension, automatic rotation and expiry |
+| [`evroc_disk`](docs/resources/disk.md) | Persistent block storage volumes |
+| [`evroc_custom_disk_image`](docs/resources/custom_disk_image.md) | Custom disk-image registrations |
+| [`evroc_snapshot`](docs/resources/snapshot.md) | Disk snapshots |
+| [`evroc_vpc`](docs/resources/vpc.md) | Virtual private clouds |
+| [`evroc_subnet`](docs/resources/subnet.md) | VPC subnets |
+| [`evroc_public_ip`](docs/resources/public_ip.md) | Public IPv4 addresses |
+| [`evroc_loadbalancer`](docs/resources/loadbalancer.md) | Layer 4 load balancers |
+| [`evroc_lb_backend_pool`](docs/resources/lb_backend_pool.md) | Backend VM pools |
+| [`evroc_lb_backend_service`](docs/resources/lb_backend_service.md) | Backend ports, PROXY protocol, and health checks |
+| [`evroc_lb_l4_route`](docs/resources/lb_l4_route.md) | Routes to backend services |
+| [`evroc_virtual_machine`](docs/resources/virtual_machine.md) | Virtual machine instances |
+| [`evroc_security_group`](docs/resources/security_group.md) | Network firewall rules |
+| [`evroc_placement_group`](docs/resources/placement_group.md) | VM placement strategies |
+| [`evroc_hotswap_disk_attachment`](docs/resources/hotswap_disk_attachment.md) | Hot-attach disks to VMs |
+| [`evroc_bucket`](docs/resources/bucket.md) | S3-compatible object storage |
+| [`evroc_bucket_service_account`](docs/resources/bucket_service_account.md) | Bucket service accounts and credentials |
+| [`evroc_filestore`](docs/resources/filestore.md) | NFS file stores |
+| [`evroc_project`](docs/resources/project.md) | Project management |
+| [`evroc_think_instance`](docs/resources/think_instance.md) | Dedicated Think inference instances |
+| [`evroc_think_api_key`](docs/resources/think_api_key.md) | Think API keys |
+| [`evroc_service_account`](docs/resources/service_account.md) | IAM service accounts |
+| [`evroc_service_account_credential`](docs/resources/service_account_credential.md) | RS256 JWT or HMAC-SigV4 credentials |
+| [`evroc_role_binding`](docs/resources/role_binding.md) | Project-scoped IAM role bindings |
+| [`evroc_org_role_binding`](docs/resources/org_role_binding.md) | Organization-scoped IAM role bindings |
 
 ### Data Sources
 
 | Data Source | Description |
-|-------------|-------------|
-| `evroc_disk_images` | List available OS images with named attributes |
-| `evroc_compute_profiles` | List VM sizes/flavors with named attributes |
-| `evroc_virtual_machine` | Look up existing VMs |
-| `evroc_disk` | Look up existing disks |
-| `evroc_hotswap_disk_attachment` | Look up existing disk attachments |
-| `evroc_public_ip` | Look up existing public IPs |
-| `evroc_security_group` | Look up existing security groups |
-| `evroc_placement_group` | Look up existing placement groups |
-| `evroc_bucket` | Look up existing buckets |
-| `evroc_bucket_service_account` | Look up existing bucket service accounts |
-| `evroc_project` | Look up existing projects |
-| `evroc_loadbalancer` | Look up existing load balancers |
-| `evroc_service_account` | Look up existing IAM service accounts |
-| `evroc_service_account_credential` | Look up existing service account credentials |
-| `evroc_roles` | List available IAM roles |
+|----------|-------------|
+| [`evroc_virtual_machine_console_logs`](docs/data-sources/virtual_machine_console_logs.md) | Sensitive VM console logs for troubleshooting |
+| [`evroc_think_shared_models`](docs/data-sources/think_shared_models.md) | Shared-model aliases, capabilities, and sunset dates |
+| [`evroc_kms_key`](docs/data-sources/kms_key.md) | Encryption keys, activation/suspension, automatic rotation and expiry |
+| [`evroc_custom_disk_image`](docs/data-sources/custom_disk_image.md) | Custom disk-image registrations |
+| [`evroc_disk`](docs/data-sources/disk.md) | Persistent block storage volumes |
+| [`evroc_snapshot`](docs/data-sources/snapshot.md) | Disk snapshots |
+| [`evroc_vpc`](docs/data-sources/vpc.md) | Virtual private clouds |
+| [`evroc_subnet`](docs/data-sources/subnet.md) | VPC subnets |
+| [`evroc_public_ip`](docs/data-sources/public_ip.md) | Public IPv4 addresses |
+| [`evroc_loadbalancer`](docs/data-sources/loadbalancer.md) | Layer 4 load balancers |
+| [`evroc_lb_backend_pool`](docs/data-sources/lb_backend_pool.md) | Backend VM pools |
+| [`evroc_lb_backend_service`](docs/data-sources/lb_backend_service.md) | Backend ports, PROXY protocol, and health checks |
+| [`evroc_lb_l4_route`](docs/data-sources/lb_l4_route.md) | Routes to backend services |
+| [`evroc_virtual_machine`](docs/data-sources/virtual_machine.md) | Virtual machine instances |
+| [`evroc_security_group`](docs/data-sources/security_group.md) | Network firewall rules |
+| [`evroc_placement_group`](docs/data-sources/placement_group.md) | VM placement strategies |
+| [`evroc_hotswap_disk_attachment`](docs/data-sources/hotswap_disk_attachment.md) | Hot-attach disks to VMs |
+| [`evroc_bucket`](docs/data-sources/bucket.md) | S3-compatible object storage |
+| [`evroc_bucket_service_account`](docs/data-sources/bucket_service_account.md) | Bucket service accounts and credentials |
+| [`evroc_bucket_service_account_secret`](docs/data-sources/bucket_service_account_secret.md) | Bucket service-account secrets |
+| [`evroc_filestore`](docs/data-sources/filestore.md) | NFS file stores |
+| [`evroc_disk_images`](docs/data-sources/disk_images.md) | Available OS images |
+| [`evroc_compute_profiles`](docs/data-sources/compute_profiles.md) | VM profiles and CPU/GPU details |
+| [`evroc_project`](docs/data-sources/project.md) | Project management |
+| [`evroc_think_instance`](docs/data-sources/think_instance.md) | Dedicated Think inference instances |
+| [`evroc_think_models`](docs/data-sources/think_models.md) | Models for dedicated Think instances |
+| [`evroc_think_sizes`](docs/data-sources/think_sizes.md) | Think instance sizes |
+| [`evroc_service_account`](docs/data-sources/service_account.md) | IAM service accounts |
+| [`evroc_service_account_credential`](docs/data-sources/service_account_credential.md) | RS256 JWT or HMAC-SigV4 credentials |
+| [`evroc_roles`](docs/data-sources/roles.md) | IAM roles and supported resource restrictions |
+| [`evroc_role_binding`](docs/data-sources/role_binding.md) | Project-scoped IAM role bindings |
+| [`evroc_org_role_binding`](docs/data-sources/org_role_binding.md) | Organization-scoped IAM role bindings |
+| [`evroc_organization_quota`](docs/data-sources/organization_quota.md) | Organization quotas and usage, including disk attachments |
+| [`evroc_project_quota`](docs/data-sources/project_quota.md) | Project quotas and usage |
 
 ### Key Fields Reference
 

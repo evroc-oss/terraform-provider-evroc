@@ -129,3 +129,45 @@ func TestDataSourceOrganizationQuotaReadNoGPUs(t *testing.T) {
 		}
 	}
 }
+
+func TestDataSourceOrganizationQuotaHotswapAttachments(t *testing.T) {
+	ms := newMockServer()
+	defer ms.close()
+	var payload map[string]interface{}
+	ms.mux.HandleFunc("/quotas/", func(w http.ResponseWriter, r *http.Request) {
+		respondJSON(w, http.StatusOK, payload)
+	})
+	config := newTestProviderConfig(t, ms.server.URL)
+	d := newTestResourceData(t, dataSourceOrganizationQuota())
+	for _, tc := range []struct {
+		name         string
+		compute      map[string]interface{}
+		limit, usage int
+	}{
+		{"populated", map[string]interface{}{"hotswapDiskAttachments": 20}, 20, 3},
+		{"zero", map[string]interface{}{"hotswapDiskAttachments": 0}, 0, 0},
+		{"populated again", map[string]interface{}{"hotswapDiskAttachments": 7}, 7, 2},
+		{"omitted field clears state", map[string]interface{}{}, 0, 0},
+		{"omitted compute", nil, 0, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			usageCompute := map[string]interface{}{}
+			if _, ok := tc.compute["hotswapDiskAttachments"]; ok {
+				usageCompute["hotswapDiskAttachments"] = tc.usage
+			}
+			payload = map[string]interface{}{
+				"spec":   map[string]interface{}{"quotas": map[string]interface{}{"compute": tc.compute}},
+				"status": map[string]interface{}{"quotaUsage": map[string]interface{}{"compute": usageCompute}},
+			}
+			if diags := dataSourceOrganizationQuotaRead(context.Background(), d, config); diags.HasError() {
+				t.Fatal(diags)
+			}
+			if got := d.Get("compute_hotswap_disk_attachments"); got != tc.limit {
+				t.Errorf("limit = %v, want %d", got, tc.limit)
+			}
+			if got := d.Get("usage_hotswap_disk_attachments"); got != tc.usage {
+				t.Errorf("usage = %v, want %d", got, tc.usage)
+			}
+		})
+	}
+}
