@@ -10,6 +10,7 @@ import (
 	"github.com/evroc-oss/evroc-go-sdk/networking"
 	networkingtypes "github.com/evroc-oss/evroc-go-sdk/types/networking"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -174,6 +175,34 @@ func resourceVPCCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 
 	d.SetId(vpc.Metadata.Id)
 	d.Set("project", resolveProject(d, config))
+
+	// Readiness includes IPv6 allocation and provisioning of the VPC's networking components.
+	waiter := retry.StateChangeConf{
+		Pending:    []string{"pending"},
+		Target:     []string{"ready"},
+		Timeout:    d.Timeout(schema.TimeoutCreate),
+		MinTimeout: 2 * time.Second,
+		Refresh: func() (interface{}, string, error) {
+			current, err := client.Networking().VirtualPrivateClouds().Get(ctx, d.Id())
+			if isNotFoundError(err) {
+				return nil, "pending", nil
+			}
+			if err != nil {
+				return nil, "", err
+			}
+			if current.Status.Conditions != nil {
+				for _, condition := range *current.Status.Conditions {
+					if condition.Type == "Ready" && condition.Status == "True" {
+						return current, "ready", nil
+					}
+				}
+			}
+			return current, "pending", nil
+		},
+	}
+	if _, err := waiter.WaitForStateContext(ctx); err != nil {
+		return diag.Errorf("error waiting for VPC %s to become ready: %s", d.Id(), err)
+	}
 
 	return resourceVPCRead(ctx, d, meta)
 }

@@ -76,6 +76,7 @@ func mockVPC(name string) *networkingtypes.VirtualPrivateCloud {
 	uid := openapi_types.UUID{}
 	cidrs := []string{"10.0.0.0/16"}
 	stackType := networkingtypes.VirtualPrivateCloudSpecStackType("dual-stack")
+	ipv6 := "2001:db8::/56"
 	return &networkingtypes.VirtualPrivateCloud{
 		ApiVersion: "v1beta2",
 		Kind:       "VirtualPrivateCloud",
@@ -91,7 +92,8 @@ func mockVPC(name string) *networkingtypes.VirtualPrivateCloud {
 			StackType:      &stackType,
 		},
 		Status: networkingtypes.VirtualPrivateCloudStatus{
-			Conditions: &conds,
+			Conditions:           &conds,
+			AssignedIPv6GUABlock: &ipv6,
 		},
 	}
 }
