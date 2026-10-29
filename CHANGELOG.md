@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-10-29
+
+### Fixed
+- `evroc_vpc`: wait for `Ready=True` before completing creation, ensuring IPv6 allocation and network provisioning have finished before dependent resources are created. Honor the creation timeout and retain the VPC in state if the wait fails.
+
 ## [0.10.0] - 2026-10-27
 
 ### Added
@@ -294,7 +299,8 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.10.1
 [0.9.7]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.7
 [0.9.6]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.6
 [0.9.5]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.5
