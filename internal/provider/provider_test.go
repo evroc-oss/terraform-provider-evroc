@@ -169,6 +169,20 @@ func TestConfigureWithToken(t *testing.T) {
 	}
 }
 
+func TestConfigureDefaultRegion(t *testing.T) {
+	d := providerTestResourceData()
+	d.Set("token", "test-token")
+	d.Set("project", "my-project")
+
+	meta, diags := configure("test", New("test")())(context.Background(), d)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %s", diags[0].Summary)
+	}
+	if got := meta.(*ProviderConfig).Region; got != "se-sto" {
+		t.Errorf("expected default region se-sto, got %s", got)
+	}
+}
+
 func TestConfigureWithUsernamePassword(t *testing.T) {
 	// Username/password auth hits the real auth endpoint, so we expect an auth error.
 	// This test verifies the code path reaches client creation (not an input validation error).
@@ -212,6 +226,47 @@ func TestConfigureSDKCredentialChainEnvVars(t *testing.T) {
 	cfg := meta.(*ProviderConfig)
 	if cfg.Project != "env-project" {
 		t.Errorf("expected project env-project, got %s", cfg.Project)
+	}
+}
+
+func TestConfigureCLIConfigProjectOverride(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	os.MkdirAll(home+"/.evroc", 0700)
+	os.WriteFile(home+"/.evroc/config.yaml", []byte(`
+currentProfile: default
+profiles:
+  default:
+    project: cli-project
+    region: se-sto
+    user:
+      refreshToken: cli-refresh
+`), 0600)
+
+	d := providerTestResourceData()
+	d.Set("project", "my-project")
+	meta, diags := configure("test", New("test")())(context.Background(), d)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %s", diags[0].Summary)
+	}
+	if got := meta.(*ProviderConfig).Project; got != "my-project" {
+		t.Errorf("expected project my-project, got %s", got)
+	}
+}
+
+func TestConfigureWithConfigFileProjectOverride(t *testing.T) {
+	configPath := t.TempDir() + "/config.yaml"
+	os.WriteFile(configPath, []byte("auth:\n  token: t\ncontext:\n  project: file-project\n  region: se-sto\n"), 0600)
+
+	d := providerTestResourceData()
+	d.Set("config_file", configPath)
+	d.Set("project", "my-project")
+	meta, diags := configure("test", New("test")())(context.Background(), d)
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %s", diags[0].Summary)
+	}
+	if got := meta.(*ProviderConfig).Project; got != "my-project" {
+		t.Errorf("expected project my-project, got %s", got)
 	}
 }
 
