@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-11-10
+
+### Security
+- Build with Go 1.26.11 to fix the `net/http` MaxBytesReader header race (GO-2026-6859).
+
+### Fixed
+- Provider: `organization`, `project` and `region` set in the provider block (or via `EVROC_ORGANIZATION`, `EVROC_PROJECT`, `EVROC_REGION`) now take precedence over the context in `config_file` or the evroc CLI profile in `~/.evroc/config.yaml`. Previously the CLI profile's project was used, so resources could be created in the wrong project.
+
 ## [0.10.1] - 2026-10-29
 
 ### Fixed
@@ -299,7 +307,8 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.10.2...HEAD
+[0.10.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.10.2
 [0.10.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.10.1
 [0.9.7]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.7
 [0.9.6]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.6

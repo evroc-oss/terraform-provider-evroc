@@ -16,7 +16,7 @@ terraform {
   required_providers {
     evroc = {
       source  = "evroc-oss/evroc"
-      version = "~> 0.10.1"
+      version = "~> 0.10.2"
     }
   }
 }
@@ -39,12 +39,12 @@ state even when marked sensitive.
 ### Optional
 
 - `api_endpoint` (String) evroc API endpoint. Can also be set via EVROC_API_ENDPOINT environment variable.
-- `config_file` (String) Path to evroc SDK config YAML file. Can also be set via EVROC_CONFIG_FILE environment variable. When set, authentication and context are loaded from this file. If not set, falls back to ~/.evroc/config.yaml or explicit provider attributes.
+- `config_file` (String) Path to evroc SDK config YAML file. Can also be set via EVROC_CONFIG_FILE environment variable. When set, authentication and context are loaded from this file. If not set, falls back to ~/.evroc/config.yaml or explicit provider attributes. Explicit organization, project and region attributes take precedence over the context in either file.
 - `organization` (String) evroc organization ID. Can also be set via EVROC_ORGANIZATION environment variable.
 - `password` (String, Sensitive, Deprecated) evroc API password for authentication. Can also be set via EVROC_PASSWORD environment variable.
 - `project` (String) Default evroc project ID. Can also be set via EVROC_PROJECT environment variable. Can be overridden per resource.
 - `refresh_token` (String, Sensitive) evroc API refresh token for automatic token renewal. Can also be set via EVROC_REFRESH_TOKEN environment variable.
-- `region` (String) Default evroc region (e.g., se-sto). Can also be set via EVROC_REGION environment variable.
+- `region` (String) Default evroc region (e.g., se-sto). Can also be set via EVROC_REGION environment variable. Defaults to se-sto when no config file supplies one.
 - `service_account_id` (String) evroc service account ID for authentication. Can also be set via EVROC_SERVICE_ACCOUNT_ID environment variable. Use with service_account_secret.
 - `service_account_secret` (String, Sensitive) evroc service account private key (base64-encoded JWK or file path). Can also be set via EVROC_SERVICE_ACCOUNT_SECRET environment variable. Use with service_account_id.
 - `token` (String, Sensitive) evroc API token for authentication. Can also be set via EVROC_TOKEN environment variable.
