@@ -27,7 +27,8 @@ func New(version string) func() *schema.Provider {
 					DefaultFunc: schema.EnvDefaultFunc("EVROC_CONFIG_FILE", nil),
 					Description: "Path to evroc SDK config YAML file. Can also be set via EVROC_CONFIG_FILE environment variable. " +
 						"When set, authentication and context are loaded from this file. " +
-						"If not set, falls back to ~/.evroc/config.yaml or explicit provider attributes.",
+						"If not set, falls back to ~/.evroc/config.yaml or explicit provider attributes. " +
+						"Explicit organization, project and region attributes take precedence over the context in either file.",
 				},
 				"token": {
 					Type:        schema.TypeString,
@@ -86,8 +87,8 @@ func New(version string) func() *schema.Provider {
 				"region": {
 					Type:        schema.TypeString,
 					Optional:    true,
-					DefaultFunc: schema.EnvDefaultFunc("EVROC_REGION", "se-sto"),
-					Description: "Default evroc region (e.g., se-sto). Can also be set via EVROC_REGION environment variable.",
+					DefaultFunc: schema.EnvDefaultFunc("EVROC_REGION", nil),
+					Description: "Default evroc region (e.g., se-sto). Can also be set via EVROC_REGION environment variable. Defaults to se-sto when no config file supplies one.",
 				},
 				"api_endpoint": {
 					Type:        schema.TypeString,
@@ -292,6 +293,25 @@ func resolveClient(d *schema.ResourceData, config *ProviderConfig) (*evroc.Clien
 	return client, nil
 }
 
+const defaultRegion = "se-sto"
+
+// overrideContext applies explicit provider attributes over the context loaded
+// from a config file, so they take precedence over the CLI profile.
+func overrideContext(cfg *config.Config, d *schema.ResourceData) {
+	if v := d.Get("organization").(string); v != "" {
+		cfg.Context.Organization = v
+	}
+	if v := d.Get("project").(string); v != "" {
+		cfg.Context.Project = v
+	}
+	if v := d.Get("region").(string); v != "" {
+		cfg.Context.Region = v
+	}
+	if cfg.Context.Region == "" {
+		cfg.Context.Region = defaultRegion
+	}
+}
+
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		configFile := d.Get("config_file").(string)
@@ -307,6 +327,7 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 			if err != nil {
 				return nil, diag.Errorf("failed to load config from file %s: %s", configFile, err)
 			}
+			overrideContext(cfg, d)
 			cfg.SetDefaults()
 			client, err := evroc.New(clientCtx, *cfg) //nolint:contextcheck // intentional: client outlives the configure request
 			if err != nil {
@@ -331,6 +352,9 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 		organization := d.Get("organization").(string)
 		project := d.Get("project").(string)
 		region := d.Get("region").(string)
+		if region == "" {
+			region = defaultRegion
+		}
 		apiEndpoint := d.Get("api_endpoint").(string)
 
 		hasToken := token != "" || refreshToken != ""
@@ -390,6 +414,7 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 		if err != nil {
 			return nil, diag.Errorf("no credentials found: provide 'config_file', explicit credentials, or configure ~/.evroc/config.yaml: %s", err)
 		}
+		overrideContext(cfg, d)
 		client, err := evroc.New(clientCtx, *cfg) //nolint:contextcheck // intentional: client outlives the configure request
 		if err != nil {
 			return nil, diag.Errorf("failed to create evroc client: %s", err)
