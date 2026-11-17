@@ -84,6 +84,30 @@ TF_ACC=1 go test ./internal/provider -v -timeout 60m \
 
 Shared-model sunset dates and console-log contents are covered by mock tests.
 
+### SDK v0.11.0 L7 end-to-end coverage
+
+The L7 acceptance test creates a VM, boot disk, security group, public IP,
+backend pool, two backend services, HTTP route, certificate, and load balancer.
+It sends requests through the public IP to verify HTTP and HTTPS routing, then
+checks the served certificate after renewal with the same key, rotation to a
+new key, and repair of externally replaced content. It also exercises route
+updates, data sources, imports, and unchanged plans. Terraform destroys the
+resources at the end, and API reads verify cleanup.
+
+Use a dedicated test project with Compute, networking, and load-balancer
+permissions. The runner must reach the load balancer's public IPv4 address on
+ports 80 and 443. The test generates its own certificate material and supplies
+the hostname directly, so no DNS configuration or certificate authority is needed.
+
+```bash
+TF_ACC=1 go test ./internal/provider -v -timeout 60m \
+  -run '^TestAccEvrocLBL7_HTTPAndHTTPS$'
+```
+
+The test follows the existing authentication setup above and is skipped unless
+`TF_ACC=1`. It creates billable resources and can leave resources behind if
+cleanup fails; retain the resource names from the test output for inspection.
+
 ### Specific Resource Tests
 
 ```bash
@@ -170,6 +194,7 @@ Current acceptance tests:
 - ✅ `evroc_hotswap_disk_attachment` - Basic create with VM and disks, read, import, destroy
 - ✅ `evroc_bucket` - Basic create, read, import, destroy
 - ✅ `evroc_bucket_service_account` - Basic create with bucket dependency, read, import, destroy
+- ✅ L7 load balancing - HTTP/HTTPS requests, route matching and updates, certificate renewal and rotation, data sources, import, destroy
 
 ## Debugging Failed Tests
 

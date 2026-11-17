@@ -3,12 +3,12 @@
 page_title: "evroc_loadbalancer Resource - evroc"
 subcategory: ""
 description: |-
-  Provides an evroc Layer 4 (TCP) load balancer resource for distributing traffic across backend targets.
+  Provides an evroc load balancer with TCP, HTTP, and HTTPS listeners for distributing traffic across backend services.
 ---
 
 # evroc_loadbalancer (Resource)
 
-Provides an evroc Layer 4 (TCP) load balancer resource for distributing traffic across backend targets.
+Provides an evroc load balancer with TCP, HTTP, and HTTPS listeners for distributing traffic across backend services.
 
 
 If `backend_network` is omitted, the load balancer attaches to the default VPC
@@ -45,6 +45,33 @@ resource "evroc_loadbalancer" "cluster" {
   }
 }
 ```
+
+## HTTP and HTTPS listeners
+
+Use `protocol = "HTTP"` or `protocol = "HTTPS"` with
+`evroc_lb_http_route` references in `route_refs`. An HTTPS listener also requires
+a certificate:
+
+```terraform
+listener {
+  name       = "https"
+  protocol   = "HTTPS"
+  port       = 443
+  route_refs = [evroc_lb_http_route.web.fqid]
+  tls {
+    certificate_ref = evroc_lb_certificate.web.fqid
+  }
+}
+```
+
+The route, certificate, and load balancer must share a project and region.
+HTTPS terminates TLS and forwards HTTP requests to the backend service. For TLS
+passthrough, use a TCP listener and an L4 route to your application's TLS port.
+The `TLS` listener protocol is not supported. HTTP listeners do not redirect to
+HTTPS automatically.
+
+See the [complete HTTPS example](https://github.com/evroc-oss/terraform-provider-evroc/tree/main/examples/https-loadbalancer)
+for backend services, certificate content, and request verification.
 
 ## Import and migration
 
@@ -99,12 +126,21 @@ address must stay the same.
 Required:
 
 - `port` (Number) Frontend port that the load balancer listens on.
-- `protocol` (String) Protocol for the listener. Currently only 'TCP' is supported.
-- `route_refs` (Set of String) Set of fully qualified L4 route references (e.g., evroc_lb_l4_route.my_route.fqid).
+- `protocol` (String) Listener protocol: TCP, HTTP, or HTTPS. HTTPS terminates TLS using the configured certificate.
+- `route_refs` (Set of String) Route references: L4 routes for TCP, or HTTP routes for HTTP and HTTPS. Routes must be in the same project and region.
 
 Optional:
 
 - `name` (String) Name for this listener (e.g., 'web', 'api'). Must be unique per load balancer.
+- `tls` (Block List, Max: 1) TLS termination settings. Required for HTTPS and forbidden for TCP and HTTP. (see [below for nested schema](#nestedblock--listener--tls))
+
+<a id="nestedblock--listener--tls"></a>
+### Nested Schema for `listener.tls`
+
+Required:
+
+- `certificate_ref` (String) Reference to a ready load balancer certificate in the same project and region.
+
 
 
 <a id="nestedblock--backend_network"></a>

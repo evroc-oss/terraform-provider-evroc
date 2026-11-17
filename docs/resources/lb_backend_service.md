@@ -46,7 +46,7 @@ resource "evroc_lb_backend_service" "application" {
 ### Optional
 
 - `health_check` (Block List, Max: 1) Active health check configuration for this backend service. (see [below for nested schema](#nestedblock--health_check))
-- `ip_protocol_selection` (String) IP protocol selection for backends. Valid values are "IPv4" and "IPv6". Defaults to the server-side value (currently "IPv4") when unset.
+- `ip_protocol_selection` (String) IP protocol selection for backends. Valid values are "IPv4" and "IPv6". Uses IPv4 when creating a service without an explicit value.
 - `project` (String) Project this resource belongs to. Defaults to the provider project. Changing this forces a new resource to be created.
 - `proxy_protocol` (Boolean) Enable PROXY protocol to pass the real client IP to backends.
 - `region` (String) Region where the backend service is created. Defaults to provider region. Changing this forces a new resource to be created.

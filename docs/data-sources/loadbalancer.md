@@ -45,3 +45,11 @@ Read-Only:
 - `port` (Number)
 - `protocol` (String)
 - `route_refs` (List of String)
+- `tls` (List of Object) (see [below for nested schema](#nestedobjatt--listener--tls))
+
+<a id="nestedobjatt--listener--tls"></a>
+### Nested Schema for `listener.tls`
+
+Read-Only:
+
+- `certificate_ref` (String)

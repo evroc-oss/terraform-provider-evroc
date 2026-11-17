@@ -99,7 +99,7 @@ func dataSourceLBL4RouteRead(ctx context.Context, d *schema.ResourceData, meta i
 	diags = setDiag(d, "region", derefString(route.Metadata.Region), diags)
 	diags = setDiag(d, "route_id", route.Metadata.Uid.String(), diags)
 	diags = setDiag(d, "created_at", route.Metadata.CreationTimestamp.Format(time.RFC3339), diags)
-	diags = setDiag(d, "default_backend_service_ref", route.Spec.DefaultBackendServiceRef, diags)
+	diags = setDiag(d, "default_backend_service_ref", route.Spec.BackendServiceRef, diags)
 
 	diags = setDiag(d, "user_labels", flattenLabels(route.Metadata.UserLabels), diags)
 	diags = setDiag(d, "system_labels", flattenLabels(route.Metadata.SystemLabels), diags)

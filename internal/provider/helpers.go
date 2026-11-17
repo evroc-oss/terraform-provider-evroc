@@ -465,6 +465,7 @@ func BuildBackendServiceCreateRequest(name string, port int32, backendPoolRef st
 	builder := loadbalancer.NewBackendServiceBuilder(name).
 		WithPort(port).
 		WithBackendPoolRef(backendPoolRef).
+		WithIPProtocol(lbtypes.IPv4).
 		WithProxyProtocol(proxyProtocol)
 
 	req := builder.Build()

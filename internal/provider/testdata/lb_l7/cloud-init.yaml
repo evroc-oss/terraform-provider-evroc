@@ -1,0 +1,36 @@
+#cloud-config
+write_files:
+  - path: /opt/l7-backend.py
+    permissions: '0644'
+    content: |
+      import http.server
+      import sys
+
+      class Handler(http.server.BaseHTTPRequestHandler):
+          def do_GET(self):
+              body = b"tf-l7-api\n" if self.server.server_port == 8080 else b"tf-l7-fallback\n"
+              self.send_response(200)
+              self.send_header("Content-Type", "text/plain")
+              self.send_header("Content-Length", str(len(body)))
+              self.end_headers()
+              self.wfile.write(body)
+
+          do_POST = do_GET
+
+      http.server.ThreadingHTTPServer(("0.0.0.0", int(sys.argv[1])), Handler).serve_forever()
+  - path: /etc/systemd/system/l7-backend@.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Terraform L7 acceptance backend on port %i
+      After=network.target
+
+      [Service]
+      ExecStart=/usr/bin/python3 /opt/l7-backend.py %i
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+runcmd:
+  - [systemctl, daemon-reload]
+  - [systemctl, enable, --now, l7-backend@8080.service, l7-backend@8081.service]

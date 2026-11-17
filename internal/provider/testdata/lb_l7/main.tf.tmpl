@@ -1,0 +1,159 @@
+resource "evroc_security_group" "backend" {
+  name = "{{.Name}}-sg"
+
+  rule {
+    name      = "api"
+    direction = "Ingress"
+    protocol  = "TCP"
+    port      = 8080
+    remote_ip = "0.0.0.0/0"
+  }
+  rule {
+    name      = "fallback"
+    direction = "Ingress"
+    protocol  = "TCP"
+    port      = 8081
+    remote_ip = "0.0.0.0/0"
+  }
+  rule {
+    name      = "egress"
+    direction = "Egress"
+    protocol  = "All"
+    remote_ip = "0.0.0.0/0"
+  }
+}
+
+resource "evroc_disk" "backend" {
+  name  = "{{.Name}}-disk"
+  size  = 100
+  image = "ubuntu-minimal.24-04.1"
+  zone  = "a"
+}
+
+resource "evroc_virtual_machine" "backend" {
+  name                   = "{{.Name}}-vm"
+  flavor                 = "a1a.s"
+  zone                   = "a"
+  boot_disk              = evroc_disk.backend.fqid
+  security_groups        = [evroc_security_group.backend.fqid]
+  cloud_config_user_data = {{printf "%q" .CloudInit}}
+}
+
+resource "evroc_lb_backend_pool" "test" {
+  name         = "{{.Name}}-pool"
+  backend_refs = [evroc_virtual_machine.backend.fqid]
+}
+
+resource "evroc_lb_backend_service" "api" {
+  name                  = "{{.Name}}-api"
+  port                  = 8080
+  backend_pool_ref      = evroc_lb_backend_pool.test.fqid
+  ip_protocol_selection = "IPv4"
+
+  health_check {
+    http {
+      path = "/healthz"
+    }
+  }
+}
+
+resource "evroc_lb_backend_service" "fallback" {
+  name                  = "{{.Name}}-fallback"
+  port                  = 8081
+  backend_pool_ref      = evroc_lb_backend_pool.test.fqid
+  ip_protocol_selection = "IPv4"
+
+  health_check {
+    http {
+      path = "/healthz"
+    }
+  }
+}
+
+resource "evroc_lb_http_route" "test" {
+  name = "{{.Name}}-route"
+{{if .Hostname}}
+  hostnames = [{{printf "%q" .Hostname}}]
+{{end}}
+
+  rule {
+    name                = "api"
+    backend_service_ref = evroc_lb_backend_service.api.fqid
+
+    match {
+      method = "GET"
+      path {
+        type  = "PathPrefix"
+        value = "/api"
+      }
+      header {
+        name  = "x-version"
+        value = {{printf "%q" .HeaderValue}}
+      }
+      query_param {
+        name  = "preview"
+        value = "true"
+      }
+    }
+    match {
+      path {
+        type  = "Exact"
+        value = "/alternative"
+      }
+    }
+    match {
+      header {
+        name  = "x-version"
+        value = "default-path"
+      }
+    }
+  }
+
+  rule {
+    name                = "fallback"
+    backend_service_ref = evroc_lb_backend_service.fallback.fqid
+  }
+}
+
+resource "evroc_lb_certificate" "test" {
+  name            = "{{.Name}}-cert"
+  certificate_pem = file({{printf "%q" .CertificateFile}})
+  private_key_pem = file({{printf "%q" .PrivateKeyFile}})
+}
+
+resource "evroc_public_ip" "test" {
+  name = "{{.Name}}-ip"
+}
+
+resource "evroc_loadbalancer" "test" {
+  name          = "{{.Name}}-lb"
+  public_ip_ref = evroc_public_ip.test.fqid
+
+  listener {
+    name       = "http"
+    protocol   = "HTTP"
+    port       = 80
+    route_refs = [evroc_lb_http_route.test.fqid]
+  }
+  listener {
+    name       = "https"
+    protocol   = "HTTPS"
+    port       = 443
+    route_refs = [evroc_lb_http_route.test.fqid]
+    tls {
+      certificate_ref = evroc_lb_certificate.test.fqid
+    }
+  }
+}
+
+data "evroc_lb_http_route" "test" {
+  name = evroc_lb_http_route.test.name
+}
+
+data "evroc_lb_certificate" "test" {
+  name = evroc_lb_certificate.test.name
+}
+
+data "evroc_loadbalancer" "test" {
+  name = evroc_loadbalancer.test.name
+}

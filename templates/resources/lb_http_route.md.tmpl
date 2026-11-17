@@ -1,0 +1,33 @@
+---
+page_title: "evroc_lb_http_route Resource - evroc"
+subcategory: ""
+description: |-
+  Manages HTTP request routing for load balancer HTTP and HTTPS listeners.
+---
+
+# evroc_lb_http_route (Resource)
+
+Route HTTP requests to backend services using hostnames, paths, methods, headers,
+and query parameters. Reference this resource's `fqid` from an HTTP or HTTPS
+listener in the same project and region.
+
+Fields within one `match` block must all match. Multiple `match` blocks are
+alternatives. A rule without matches is a catch-all. An omitted path matches the
+`PathPrefix` `/`; an explicit `path` block defaults to the same values. `Exact`
+matches one path, while `PathPrefix` matches complete path segments: `/api`
+matches `/api` and `/api/status`, but not `/apiv2`.
+
+Rules and matches preserve their configured order. Rule names must be unique.
+Header names are case-insensitive. Omit or remove `hostnames` to accept all
+hostnames accepted by the listener. Backend services must be in the same project
+and region as the route.
+
+## Example usage
+
+{{ tffile .ExampleFile }}
+
+## Import
+
+{{ codefile "shell" .ImportFile }}
+
+{{ .SchemaMarkdown | trimspace }}

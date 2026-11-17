@@ -3,12 +3,12 @@
 page_title: "evroc_loadbalancer Resource - evroc"
 subcategory: ""
 description: |-
-  Provides an evroc Layer 4 (TCP) load balancer resource for distributing traffic across backend targets.
+  Provides an evroc load balancer with TCP, HTTP, and HTTPS listeners for distributing traffic across backend services.
 ---
 
 # evroc_loadbalancer (Resource)
 
-Provides an evroc Layer 4 (TCP) load balancer resource for distributing traffic across backend targets.
+Provides an evroc load balancer with TCP, HTTP, and HTTPS listeners for distributing traffic across backend services.
 
 
 If `backend_network` is omitted, the load balancer attaches to the default VPC
@@ -45,6 +45,33 @@ resource "evroc_loadbalancer" "cluster" {
   }
 }
 ```
+
+## HTTP and HTTPS listeners
+
+Use `protocol = "HTTP"` or `protocol = "HTTPS"` with
+`evroc_lb_http_route` references in `route_refs`. An HTTPS listener also requires
+a certificate:
+
+```terraform
+listener {
+  name       = "https"
+  protocol   = "HTTPS"
+  port       = 443
+  route_refs = [evroc_lb_http_route.web.fqid]
+  tls {
+    certificate_ref = evroc_lb_certificate.web.fqid
+  }
+}
+```
+
+The route, certificate, and load balancer must share a project and region.
+HTTPS terminates TLS and forwards HTTP requests to the backend service. For TLS
+passthrough, use a TCP listener and an L4 route to your application's TLS port.
+The `TLS` listener protocol is not supported. HTTP listeners do not redirect to
+HTTPS automatically.
+
+See the [complete HTTPS example](https://github.com/evroc-oss/terraform-provider-evroc/tree/main/examples/https-loadbalancer)
+for backend services, certificate content, and request verification.
 
 ## Import and migration
 
