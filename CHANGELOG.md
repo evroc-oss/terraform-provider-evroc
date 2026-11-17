@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-16
+
+### Added
+- `evroc_loadbalancer`: HTTP and HTTPS listeners with certificate references
+- `evroc_lb_http_route` resource and data source: hostname, path, method, header, and query parameter matching
+- `evroc_lb_certificate` resource and data source: certificate/key uploads and rotation, readiness, fingerprints, and expiry metadata
+- Complete HTTPS load balancer example
+
+### Changed
+- Use evroc Go SDK v0.11.0; load balancer operations use API `v1alpha2`
+- `evroc_loadbalancer`: allow multiple `route_refs` per listener for TCP, HTTP, and HTTPS.
+- `evroc_lb_http_route`: leave collection sizes and string length limits to the API.
+- `evroc_lb_backend_service`: send `IPv4` explicitly when `ip_protocol_selection` is omitted, matching the API default.
+
+### Fixed
+- `evroc_subnet`: wait for readiness and address allocation before completing creation, preventing incomplete state and import mismatches. Honor the creation timeout and retain the subnet in state if the wait fails.
+
 ## [0.10.2] - 2026-11-10
 
 ### Security
@@ -307,7 +324,8 @@ Initial public release of the evroc Terraform Provider.
 - Terraform Plugin SDK v2.40.0
 - Go 1.25.0
 
-[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.10.2...HEAD
+[Unreleased]: https://github.com/evroc-oss/terraform-provider-evroc/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.11.0
 [0.10.2]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.10.2
 [0.10.1]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.10.1
 [0.9.7]: https://github.com/evroc-oss/terraform-provider-evroc/releases/tag/v0.9.7

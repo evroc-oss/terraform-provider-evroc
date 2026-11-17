@@ -150,7 +150,7 @@ func resourceLBL4RouteRead(ctx context.Context, d *schema.ResourceData, meta int
 	diags = setDiag(d, "region", derefString(route.Metadata.Region), diags)
 	diags = setDiag(d, "route_id", route.Metadata.Uid.String(), diags)
 	diags = setDiag(d, "created_at", route.Metadata.CreationTimestamp.Format(time.RFC3339), diags)
-	diags = setDiag(d, "default_backend_service_ref", route.Spec.DefaultBackendServiceRef, diags)
+	diags = setDiag(d, "default_backend_service_ref", route.Spec.BackendServiceRef, diags)
 
 	if route.Metadata.UserLabels != nil && len(*route.Metadata.UserLabels) > 0 {
 		diags = setDiag(d, "user_labels", flattenLabels(route.Metadata.UserLabels), diags)
@@ -181,7 +181,7 @@ func resourceLBL4RouteUpdate(ctx context.Context, d *schema.ResourceData, meta i
 		}
 
 		if d.HasChange("default_backend_service_ref") {
-			route.Spec.DefaultBackendServiceRef = d.Get("default_backend_service_ref").(string)
+			route.Spec.BackendServiceRef = d.Get("default_backend_service_ref").(string)
 		}
 
 		if d.HasChange("user_labels") {

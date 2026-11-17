@@ -16,10 +16,11 @@ import (
 )
 
 const (
-	loadBalancerVPCRefKey    = "vpc_ref"
-	loadBalancerSubnetKey    = "subnet"
-	loadBalancerZoneKey      = "zone"
-	loadBalancerSubnetRefKey = "subnet_ref"
+	loadBalancerVPCRefKey         = "vpc_ref"
+	loadBalancerSubnetKey         = "subnet"
+	loadBalancerZoneKey           = "zone"
+	loadBalancerSubnetRefKey      = "subnet_ref"
+	loadBalancerCertificateRefKey = "certificate_ref"
 )
 
 func loadbalancerListenerResource() *schema.Resource {
@@ -31,9 +32,10 @@ func loadbalancerListenerResource() *schema.Resource {
 				Description: "Name for this listener (e.g., 'web', 'api'). Must be unique per load balancer.",
 			},
 			"protocol": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "Protocol for the listener. Currently only 'TCP' is supported.",
+				Type:             schema.TypeString,
+				Required:         true,
+				Description:      "Listener protocol: TCP, HTTP, or HTTPS. HTTPS terminates TLS using the configured certificate.",
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{string(lbtypes.TCP), string(lbtypes.HTTP), string(lbtypes.HTTPS)}, false)),
 			},
 			"port": {
 				Type:             schema.TypeInt,
@@ -44,10 +46,25 @@ func loadbalancerListenerResource() *schema.Resource {
 			"route_refs": {
 				Type:        schema.TypeSet,
 				Required:    true,
-				Description: "Set of fully qualified L4 route references (e.g., evroc_lb_l4_route.my_route.fqid).",
+				Description: "Route references: L4 routes for TCP, or HTTP routes for HTTP and HTTPS. Routes must be in the same project and region.",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+			},
+			"tls": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				MaxItems:    1,
+				Description: "TLS termination settings. Required for HTTPS and forbidden for TCP and HTTP.",
+				Elem: &schema.Resource{Schema: map[string]*schema.Schema{
+					loadBalancerCertificateRefKey: {
+						Type:             schema.TypeString,
+						Required:         true,
+						DiffSuppressFunc: suppressFQIDDiff,
+						ValidateDiagFunc: validation.ToDiagFunc(validation.StringIsNotWhiteSpace),
+						Description:      "Reference to a ready load balancer certificate in the same project and region.",
+					},
+				}},
 			},
 		},
 	}
@@ -55,7 +72,8 @@ func loadbalancerListenerResource() *schema.Resource {
 
 func resourceLoadBalancer() *schema.Resource {
 	return &schema.Resource{
-		Description: "Provides an evroc Layer 4 (TCP) load balancer resource for distributing traffic across backend targets.",
+		Description:   "Provides an evroc load balancer with TCP, HTTP, and HTTPS listeners for distributing traffic across backend services.",
+		CustomizeDiff: validateLoadBalancerListeners,
 
 		CreateContext: resourceLoadBalancerCreate,
 		ReadContext:   resourceLoadBalancerRead,
@@ -409,6 +427,13 @@ func expandLoadBalancerListeners(listenersSet *schema.Set) []lbtypes.Loadbalance
 				l.RouteRefs = &refs
 			}
 		}
+		if blocks := m["tls"].([]interface{}); len(blocks) > 0 {
+			l.Tls = &struct {
+				CertificateRef string `json:"certificateRef"`
+			}{
+				CertificateRef: blocks[0].(map[string]interface{})[loadBalancerCertificateRefKey].(string),
+			}
+		}
 
 		listeners = append(listeners, l)
 	}
@@ -440,9 +465,39 @@ func flattenLoadBalancerListeners(listeners *[]lbtypes.LoadbalancerSpecListeners
 		} else {
 			m["route_refs"] = []string{}
 		}
+		m["tls"] = []interface{}{}
+		if l.Tls != nil {
+			m["tls"] = []interface{}{map[string]interface{}{loadBalancerCertificateRefKey: l.Tls.CertificateRef}}
+		}
 
 		result = append(result, m)
 	}
 
 	return result
+}
+
+func validateLoadBalancerListeners(_ context.Context, d *schema.ResourceDiff, _ interface{}) error {
+	if !newValueWhollyKnown(d, "listener") {
+		return nil
+	}
+	names := make(map[string]bool)
+	ports := make(map[int]bool)
+	for _, item := range d.Get("listener").(*schema.Set).List() {
+		listener := item.(map[string]interface{})
+		name := listener["name"].(string)
+		if name != "" && names[name] {
+			return fmt.Errorf("listener names must be unique: %q", name)
+		}
+		names[name] = true
+		port := listener["port"].(int)
+		if ports[port] {
+			return fmt.Errorf("listener ports must be unique: %d", port)
+		}
+		ports[port] = true
+		hasTLS := len(listener["tls"].([]interface{})) > 0
+		if (listener["protocol"].(string) == string(lbtypes.HTTPS)) != hasTLS {
+			return fmt.Errorf("listener TLS settings are required for HTTPS and forbidden for TCP and HTTP")
+		}
+	}
+	return nil
 }

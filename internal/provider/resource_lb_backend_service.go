@@ -77,7 +77,7 @@ func resourceLBBackendService() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Computed:         true,
-				Description:      "IP protocol selection for backends. Valid values are \"IPv4\" and \"IPv6\". Defaults to the server-side value (currently \"IPv4\") when unset.",
+				Description:      "IP protocol selection for backends. Valid values are \"IPv4\" and \"IPv6\". Uses IPv4 when creating a service without an explicit value.",
 				ValidateDiagFunc: validateIPProtocolSelection(),
 			},
 			"health_check": {
@@ -421,7 +421,7 @@ func resourceLBBackendServiceCreate(ctx context.Context, d *schema.ResourceData,
 
 	if v, ok := d.GetOk("ip_protocol_selection"); ok {
 		sel := lbtypes.BackendserviceSpecIpProtocolSelection(v.(string))
-		req.Spec.IpProtocolSelection = &sel
+		req.Spec.IpProtocolSelection = sel
 	}
 
 	if hc := expandHealthCheck(d); hc != nil {
@@ -471,9 +471,7 @@ func resourceLBBackendServiceRead(ctx context.Context, d *schema.ResourceData, m
 	}
 	diags = setDiag(d, "proxy_protocol", proxyProtocol, diags)
 
-	if svc.Spec.IpProtocolSelection != nil {
-		diags = setDiag(d, "ip_protocol_selection", string(*svc.Spec.IpProtocolSelection), diags)
-	}
+	diags = setDiag(d, "ip_protocol_selection", string(svc.Spec.IpProtocolSelection), diags)
 
 	if svc.Metadata.UserLabels != nil && len(*svc.Metadata.UserLabels) > 0 {
 		diags = setDiag(d, "user_labels", flattenLabels(svc.Metadata.UserLabels), diags)
@@ -538,9 +536,9 @@ func resourceLBBackendServiceUpdate(ctx context.Context, d *schema.ResourceData,
 		if d.HasChange("ip_protocol_selection") {
 			if v, ok := d.GetOk("ip_protocol_selection"); ok {
 				sel := lbtypes.BackendserviceSpecIpProtocolSelection(v.(string))
-				svc.Spec.IpProtocolSelection = &sel
+				svc.Spec.IpProtocolSelection = sel
 			} else {
-				svc.Spec.IpProtocolSelection = nil
+				svc.Spec.IpProtocolSelection = lbtypes.IPv4
 			}
 		}
 

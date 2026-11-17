@@ -3,7 +3,8 @@ module github.com/evroc-oss/terraform-provider-evroc
 go 1.26.11
 
 require (
-	github.com/evroc-oss/evroc-go-sdk v0.10.1
+	github.com/evroc-oss/evroc-go-sdk v0.11.0
+	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.0
 	github.com/hashicorp/terraform-plugin-testing v1.15.0
 	github.com/oapi-codegen/runtime v1.4.2
@@ -17,7 +18,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.7 // indirect
 	github.com/go-test/deep v1.0.8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
@@ -25,7 +26,6 @@ require (
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-checkpoint v0.5.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-cty v1.5.0 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-plugin v1.7.0 // indirect

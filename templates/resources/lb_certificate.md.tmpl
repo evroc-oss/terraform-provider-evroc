@@ -1,0 +1,40 @@
+---
+page_title: "evroc_lb_certificate Resource - evroc"
+subcategory: ""
+description: |-
+  Manages a certificate and private key for load balancer HTTPS termination.
+---
+
+# evroc_lb_certificate (Resource)
+
+Manage a PEM certificate chain and matching private key for HTTPS listeners.
+Creation uploads the pair and waits for readiness with matching leaf certificate
+and public-key fingerprints. Changing either input uploads the complete pair to
+the existing resource; listeners retain their reference.
+
+The chain must contain the leaf certificate followed by required intermediates,
+without the root CA. The service accepts RSA keys of at least 2048 bits or ECDSA
+keys and validates the chain and key pair. Obtain and renew certificates through
+your certificate authority before updating the PEM inputs.
+
+Both PEM inputs are sensitive, but Terraform stores their contents in state and
+saved plans. Protect access to these files. The API never returns uploaded PEM
+content. Fingerprints identify the leaf certificate and public key; they do not
+identify changes to intermediate certificates. A plan detects an externally
+replaced leaf certificate or public key and proposes restoring the configured
+pair on the next apply.
+
+## Example usage
+
+{{ tffile .ExampleFile }}
+
+## Import
+
+{{ codefile "shell" .ImportFile }}
+
+Import retrieves public metadata only. To manage imported certificate content,
+provide the certificate chain and matching private key in configuration. The
+first apply uploads that pair because the API cannot recover the PEM inputs.
+Use the certificate data source to look up an externally managed certificate.
+
+{{ .SchemaMarkdown | trimspace }}

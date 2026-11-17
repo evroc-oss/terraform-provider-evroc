@@ -13,10 +13,6 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-func ipProtocolPtr(v lbtypes.BackendserviceSpecIpProtocolSelection) *lbtypes.BackendserviceSpecIpProtocolSelection {
-	return &v
-}
-
 func mockLoadBalancer(name string) *lbtypes.Loadbalancer {
 	conds := []lbtypes.LoadbalancerStatusConditionsItem{
 		{Type: "Ready", Status: "True"},
@@ -30,7 +26,7 @@ func mockLoadBalancer(name string) *lbtypes.Loadbalancer {
 		{Port: port, Protocol: protocol, RouteRefs: &[]string{"/loadbalancer/projects/test-project/regions/se-sto/l4Routes/test-route"}},
 	}
 	return &lbtypes.Loadbalancer{
-		ApiVersion: "v1alpha1",
+		ApiVersion: "loadbalancer/v1alpha2",
 		Kind:       "Loadbalancer",
 		Metadata: lbtypes.RegionalMetadataResponse{
 			Id:                name,
@@ -54,8 +50,8 @@ func mockLoadBalancer(name string) *lbtypes.Loadbalancer {
 
 func setupLoadBalancerHandlers(ms *mockServer, name string) {
 	lb := mockLoadBalancer(name)
-	resourcePath := fmt.Sprintf("/loadbalancer/v1alpha1/projects/test-project/regions/se-sto/loadBalancers/%s", name)
-	ms.mux.HandleFunc("/loadbalancer/v1alpha1/projects/test-project/regions/se-sto/loadBalancers", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/loadbalancer/v1alpha2/projects/test-project/regions/se-sto/loadBalancers/%s", name)
+	ms.mux.HandleFunc("/loadbalancer/v1alpha2/projects/test-project/regions/se-sto/loadBalancers", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, lb)
 			return
@@ -86,7 +82,7 @@ func mockBackendPool(name string) *lbtypes.Backendpool {
 	uid := openapi_types.UUID{}
 	refs := []string{"/compute/projects/test-project/regions/se-sto/virtualMachines/test-vm"}
 	return &lbtypes.Backendpool{
-		ApiVersion: "v1alpha1",
+		ApiVersion: "loadbalancer/v1alpha2",
 		Kind:       "Backendpool",
 		Metadata: lbtypes.RegionalMetadataResponse{
 			Id:                name,
@@ -103,8 +99,8 @@ func mockBackendPool(name string) *lbtypes.Backendpool {
 
 func setupBackendPoolHandlers(ms *mockServer, name string) {
 	pool := mockBackendPool(name)
-	resourcePath := fmt.Sprintf("/loadbalancer/v1alpha1/projects/test-project/regions/se-sto/backendPools/%s", name)
-	ms.mux.HandleFunc("/loadbalancer/v1alpha1/projects/test-project/regions/se-sto/backendPools", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/loadbalancer/v1alpha2/projects/test-project/regions/se-sto/backendPools/%s", name)
+	ms.mux.HandleFunc("/loadbalancer/v1alpha2/projects/test-project/regions/se-sto/backendPools", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, pool)
 			return
@@ -144,7 +140,7 @@ func mockBackendService(name string) *lbtypes.Backendservice {
 	uid := openapi_types.UUID{}
 	poolRef := "/loadbalancer/projects/test-project/regions/se-sto/backendPools/test-pool"
 	return &lbtypes.Backendservice{
-		ApiVersion: "v1alpha1",
+		ApiVersion: "loadbalancer/v1alpha2",
 		Kind:       "Backendservice",
 		Metadata: lbtypes.RegionalMetadataResponse{
 			Id:                name,
@@ -156,7 +152,7 @@ func mockBackendService(name string) *lbtypes.Backendservice {
 		Spec: lbtypes.BackendserviceSpec{
 			Port:                80,
 			BackendPoolRef:      &poolRef,
-			IpProtocolSelection: ipProtocolPtr(lbtypes.IPv4),
+			IpProtocolSelection: lbtypes.IPv4,
 		},
 		Status: lbtypes.BackendserviceStatus{
 			Conditions: &conds,
@@ -169,8 +165,8 @@ func mockBackendService(name string) *lbtypes.Backendservice {
 
 func setupBackendServiceHandlers(ms *mockServer, name string) {
 	svc := mockBackendService(name)
-	resourcePath := fmt.Sprintf("/loadbalancer/v1alpha1/projects/test-project/regions/se-sto/backendServices/%s", name)
-	ms.mux.HandleFunc("/loadbalancer/v1alpha1/projects/test-project/regions/se-sto/backendServices", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/loadbalancer/v1alpha2/projects/test-project/regions/se-sto/backendServices/%s", name)
+	ms.mux.HandleFunc("/loadbalancer/v1alpha2/projects/test-project/regions/se-sto/backendServices", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, svc)
 			return
@@ -204,7 +200,7 @@ func mockL4Route(name string) *lbtypes.L4route {
 	uid := openapi_types.UUID{}
 	svcRef := "/loadbalancer/projects/test-project/regions/se-sto/backendServices/test-svc"
 	return &lbtypes.L4route{
-		ApiVersion: "v1alpha1",
+		ApiVersion: "loadbalancer/v1alpha2",
 		Kind:       "L4route",
 		Metadata: lbtypes.RegionalMetadataResponse{
 			Id:                name,
@@ -214,7 +210,7 @@ func mockL4Route(name string) *lbtypes.L4route {
 			Uid:               uid,
 		},
 		Spec: lbtypes.L4routeSpec{
-			DefaultBackendServiceRef: svcRef,
+			BackendServiceRef: svcRef,
 		},
 		Status: lbtypes.L4routeStatus{
 			Conditions: &conds,
@@ -224,8 +220,8 @@ func mockL4Route(name string) *lbtypes.L4route {
 
 func setupL4RouteHandlers(ms *mockServer, name string) {
 	route := mockL4Route(name)
-	resourcePath := fmt.Sprintf("/loadbalancer/v1alpha1/projects/test-project/regions/se-sto/l4Routes/%s", name)
-	ms.mux.HandleFunc("/loadbalancer/v1alpha1/projects/test-project/regions/se-sto/l4Routes", func(w http.ResponseWriter, r *http.Request) {
+	resourcePath := fmt.Sprintf("/loadbalancer/v1alpha2/projects/test-project/regions/se-sto/l4Routes/%s", name)
+	ms.mux.HandleFunc("/loadbalancer/v1alpha2/projects/test-project/regions/se-sto/l4Routes", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			respondJSON(w, http.StatusCreated, route)
 			return

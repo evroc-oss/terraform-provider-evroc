@@ -117,6 +117,20 @@ func TestResourceSchemas(t *testing.T) {
 			computedFields: []string{"route_id", "system_labels", "created_at", "fqid"},
 		},
 		{
+			name:           "evroc_lb_http_route",
+			resource:       resourceLBHTTPRoute(),
+			requiredFields: []string{"name", "rule"},
+			optionalFields: []string{"project", "region", "hostnames", "user_labels"},
+			computedFields: []string{"route_id", "system_labels", "created_at", "fqid"},
+		},
+		{
+			name:           "evroc_lb_certificate",
+			resource:       resourceLBCertificate(),
+			requiredFields: []string{"name", "certificate_pem", "private_key_pem"},
+			optionalFields: []string{"project", "region", "user_labels"},
+			computedFields: []string{"certificate_id", "certificate_sha256_fingerprint", "public_key_sha256_fingerprint", "subject", "issuer", "not_before", "not_after", "subject_alternative_names", "ready", "system_labels", "created_at", "fqid"},
+		},
+		{
 			name:           "evroc_think_api_key",
 			resource:       resourceThinkAPIKey(),
 			requiredFields: []string{"name"},
@@ -355,6 +369,18 @@ func TestDataSourceSchemas(t *testing.T) {
 			requiredFields: []string{"name"},
 			computedFields: []string{"route_id", "default_backend_service_ref", "created_at", "fqid"},
 		},
+		{
+			name:           "evroc_lb_http_route (data)",
+			resource:       dataSourceLBHTTPRoute(),
+			requiredFields: []string{"name"},
+			computedFields: []string{"route_id", "hostnames", "rule", "created_at", "fqid"},
+		},
+		{
+			name:           "evroc_lb_certificate (data)",
+			resource:       dataSourceLBCertificate(),
+			requiredFields: []string{"name"},
+			computedFields: []string{"certificate_id", "certificate_sha256_fingerprint", "public_key_sha256_fingerprint", "subject", "issuer", "not_before", "not_after", "subject_alternative_names", "ready", "created_at", "fqid"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -460,13 +486,13 @@ func TestProviderSchema(t *testing.T) {
 	}
 
 	// Verify resource count
-	expectedResources := 25
+	expectedResources := 27
 	if len(p.ResourcesMap) != expectedResources {
 		t.Errorf("expected %d resources, got %d", expectedResources, len(p.ResourcesMap))
 	}
 
 	// Verify data source count
-	expectedDataSources := 34
+	expectedDataSources := 36
 	if len(p.DataSourcesMap) != expectedDataSources {
 		t.Errorf("expected %d data sources, got %d", expectedDataSources, len(p.DataSourcesMap))
 	}
@@ -493,6 +519,8 @@ func TestProviderSchema(t *testing.T) {
 		"evroc_lb_backend_pool",
 		"evroc_lb_backend_service",
 		"evroc_lb_l4_route",
+		"evroc_lb_http_route",
+		"evroc_lb_certificate",
 	}
 	for _, name := range expectedResourceNames {
 		if _, ok := p.ResourcesMap[name]; !ok {
@@ -529,6 +557,8 @@ func TestProviderSchema(t *testing.T) {
 		"evroc_lb_backend_pool",
 		"evroc_lb_backend_service",
 		"evroc_lb_l4_route",
+		"evroc_lb_http_route",
+		"evroc_lb_certificate",
 	}
 	for _, name := range expectedDataSourceNames {
 		if _, ok := p.DataSourcesMap[name]; !ok {
@@ -648,6 +678,18 @@ func TestResourceForceNewFields(t *testing.T) {
 			resource:       resourceLBL4Route(),
 			forceNewFields: []string{"name"},
 			mutableFields:  []string{"default_backend_service_ref", "user_labels"},
+		},
+		{
+			name:           "evroc_lb_http_route",
+			resource:       resourceLBHTTPRoute(),
+			forceNewFields: []string{"name", "project", "region"},
+			mutableFields:  []string{"hostnames", "rule", "user_labels"},
+		},
+		{
+			name:           "evroc_lb_certificate",
+			resource:       resourceLBCertificate(),
+			forceNewFields: []string{"name", "project", "region", "user_labels"},
+			mutableFields:  []string{"certificate_pem", "private_key_pem"},
 		},
 	}
 

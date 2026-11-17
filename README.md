@@ -441,6 +441,7 @@ Complete, production-ready examples in the [`examples/`](examples/) directory:
 - **[disk-attachment](examples/disk-attachment/)** - Hot-attach disks to running VMs
 - **[placement-groups](examples/placement-groups/)** - VM placement strategies for high availability
 - **[loadbalancer](examples/loadbalancer/)** - HA k3s control plane behind an L4 load balancer across 3 zones
+- **[https-loadbalancer](examples/https-loadbalancer/)** - HTTPS termination with an HTTP route and certificate
 - **[service-account](examples/service-account/)** - IAM service accounts with role bindings and credentials for CI/CD
 - **[public-ip](examples/public-ip/)** - Public IP allocation
 - **[project](examples/project/)** - Project management
@@ -524,10 +525,12 @@ Then omit `access_key` and `secret_key` from the backend block.
 | [`evroc_vpc`](docs/resources/vpc.md) | Virtual private clouds |
 | [`evroc_subnet`](docs/resources/subnet.md) | VPC subnets |
 | [`evroc_public_ip`](docs/resources/public_ip.md) | Public IPv4 addresses |
-| [`evroc_loadbalancer`](docs/resources/loadbalancer.md) | Layer 4 load balancers |
+| [`evroc_loadbalancer`](docs/resources/loadbalancer.md) | TCP, HTTP, and HTTPS load balancers |
 | [`evroc_lb_backend_pool`](docs/resources/lb_backend_pool.md) | Backend VM pools |
 | [`evroc_lb_backend_service`](docs/resources/lb_backend_service.md) | Backend ports, PROXY protocol, and health checks |
 | [`evroc_lb_l4_route`](docs/resources/lb_l4_route.md) | Routes to backend services |
+| [`evroc_lb_http_route`](docs/resources/lb_http_route.md) | HTTP host and request routing |
+| [`evroc_lb_certificate`](docs/resources/lb_certificate.md) | HTTPS certificates and private keys |
 | [`evroc_virtual_machine`](docs/resources/virtual_machine.md) | Virtual machine instances |
 | [`evroc_security_group`](docs/resources/security_group.md) | Network firewall rules |
 | [`evroc_placement_group`](docs/resources/placement_group.md) | VM placement strategies |
@@ -556,10 +559,12 @@ Then omit `access_key` and `secret_key` from the backend block.
 | [`evroc_vpc`](docs/data-sources/vpc.md) | Virtual private clouds |
 | [`evroc_subnet`](docs/data-sources/subnet.md) | VPC subnets |
 | [`evroc_public_ip`](docs/data-sources/public_ip.md) | Public IPv4 addresses |
-| [`evroc_loadbalancer`](docs/data-sources/loadbalancer.md) | Layer 4 load balancers |
+| [`evroc_loadbalancer`](docs/data-sources/loadbalancer.md) | TCP, HTTP, and HTTPS load balancers |
 | [`evroc_lb_backend_pool`](docs/data-sources/lb_backend_pool.md) | Backend VM pools |
 | [`evroc_lb_backend_service`](docs/data-sources/lb_backend_service.md) | Backend ports, PROXY protocol, and health checks |
 | [`evroc_lb_l4_route`](docs/data-sources/lb_l4_route.md) | Routes to backend services |
+| [`evroc_lb_http_route`](docs/data-sources/lb_http_route.md) | HTTP host and request routing |
+| [`evroc_lb_certificate`](docs/data-sources/lb_certificate.md) | Public certificate metadata and readiness |
 | [`evroc_virtual_machine`](docs/data-sources/virtual_machine.md) | Virtual machine instances |
 | [`evroc_security_group`](docs/data-sources/security_group.md) | Network firewall rules |
 | [`evroc_placement_group`](docs/data-sources/placement_group.md) | VM placement strategies |

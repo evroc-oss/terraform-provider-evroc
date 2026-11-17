@@ -10,6 +10,7 @@ import (
 	"github.com/evroc-oss/evroc-go-sdk/networking"
 	networkingtypes "github.com/evroc-oss/evroc-go-sdk/types/networking"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -219,6 +220,38 @@ func resourceSubnetCreate(ctx context.Context, d *schema.ResourceData, meta inte
 
 	d.SetId(subnet.Metadata.Id)
 	d.Set("project", resolveProject(d, config))
+
+	// Wait for address allocation before recording state or creating dependent resources.
+	const (
+		pending = "pending"
+		ready   = "ready"
+	)
+	waiter := retry.StateChangeConf{
+		Pending:    []string{pending},
+		Target:     []string{ready},
+		Timeout:    d.Timeout(schema.TimeoutCreate),
+		MinTimeout: 2 * time.Second,
+		Refresh: func() (interface{}, string, error) {
+			current, err := client.Networking().Subnets().Get(ctx, d.Id())
+			if isNotFoundError(err) {
+				return nil, pending, nil
+			}
+			if err != nil {
+				return nil, "", err
+			}
+			if current.Status.Conditions != nil {
+				for _, condition := range *current.Status.Conditions {
+					if condition.Type == "Ready" && condition.Status == "True" {
+						return current, ready, nil
+					}
+				}
+			}
+			return current, pending, nil
+		},
+	}
+	if _, err := waiter.WaitForStateContext(ctx); err != nil {
+		return diag.Errorf("error waiting for subnet %s to become ready: %s", d.Id(), err)
+	}
 
 	return resourceSubnetRead(ctx, d, meta)
 }

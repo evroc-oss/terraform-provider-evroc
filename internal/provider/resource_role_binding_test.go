@@ -21,10 +21,10 @@ func TestAccEvrocRoleBinding_Basic(t *testing.T) {
 			{
 				Config: testAccEvrocRoleBindingConfig_basic(saName),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("evroc_role_binding.compute", "role", "computeOperator"),
-					resource.TestCheckResourceAttr("evroc_role_binding.networking", "role", "networkingViewer"),
-					resource.TestCheckResourceAttrSet("evroc_role_binding.compute", "principal"),
-					resource.TestCheckResourceAttrSet("evroc_role_binding.networking", "principal"),
+					resource.TestCheckResourceAttr("evroc_role_binding.test", "roles.#", "2"),
+					resource.TestCheckResourceAttr("evroc_role_binding.test", "roles.0.role", "/iam/roles/computeOperator"),
+					resource.TestCheckResourceAttr("evroc_role_binding.test", "roles.1.role", "/iam/roles/networkingViewer"),
+					resource.TestCheckResourceAttrPair("evroc_role_binding.test", "principal", "evroc_service_account.test", "fqid"),
 				),
 			},
 		},
@@ -39,14 +39,15 @@ resource "evroc_service_account" "test" {
   enabled     = true
 }
 
-resource "evroc_role_binding" "compute" {
+resource "evroc_role_binding" "test" {
   principal = evroc_service_account.test.fqid
-  role      = "computeOperator"
-}
 
-resource "evroc_role_binding" "networking" {
-  principal = evroc_service_account.test.fqid
-  role      = "networkingViewer"
+  roles {
+    role = "computeOperator"
+  }
+  roles {
+    role = "networkingViewer"
+  }
 }
 `, saName)
 }

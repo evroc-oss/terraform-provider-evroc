@@ -70,10 +70,17 @@ func dataSourceLoadBalancer() *schema.Resource {
 						"route_refs": {
 							Type:        schema.TypeList,
 							Computed:    true,
-							Description: "L4 route references for this listener.",
+							Description: "L4 route references for TCP, or HTTP route references for HTTP and HTTPS.",
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
+						},
+						"tls": {
+							Type: schema.TypeList, Computed: true,
+							Description: "TLS termination settings for an HTTPS listener.",
+							Elem: &schema.Resource{Schema: map[string]*schema.Schema{
+								loadBalancerCertificateRefKey: {Type: schema.TypeString, Computed: true, Description: "Reference to the load balancer certificate."},
+							}},
 						},
 					},
 				},
